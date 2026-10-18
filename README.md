@@ -1,5 +1,10 @@
 # Twitch Drops Miner
 
+> **Fork build (v16)** - a fork of [DevilXD/TwitchDropsMiner](https://github.com/DevilXD/TwitchDropsMiner)
+> carrying the fixes for the September-October 2026 Twitch API changes, which left the
+> upstream `master` unable to log in and unable to see any campaign. See
+> [Fork notes](#fork-notes-what-this-build-changes) below.
+
 This application allows you to AFK mine timed Twitch drops, without having to worry about switching channels when the one you were watching goes offline, claiming the drops, or even receiving the stream data itself. This helps you save on bandwidth and hassle.
 
 ### How It Works:
@@ -179,3 +184,43 @@ placed past the period character at the end.
 @DogancanYr, @Elderly-Emre, @Hweord - For the Turkish (Türkçe) translation corrections and revisions.  
 @Nollasko - For the entirety of the Ukrainian (Українська) translation and revisions.  
 @kilroy98 - For the Ukrainian (Українська) translation corrections and revisions.  
+
+## Fork notes: what this build changes
+
+Twitch changed several things between September and October 2026, which broke the
+upstream application in three separate places. This fork carries the fixes:
+
+- **Login works again.** The device code flow stopped accepting the Android app client
+  ID in September 2026 (`{"status":400,"message":"invalid client"}`), which surfaced as
+  `KeyError: 'device_code'`. The client is now a setting (`client_type` in
+  `settings.json`, default `SMARTBOX`) and every known client is tried in turn during
+  login, with the first accepted one saved back into the settings. A future rotation of
+  client IDs is a config change instead of a broken release.
+- **Campaigns are found again.** `ViewerDropsDashboard` and `DropCampaignDetails` are
+  now behind an integrity check and return nothing for any client the application can
+  use, so the campaign list came back empty. The per-channel available drops query still
+  works, so campaigns are now discovered from the live channels of the games you care
+  about. Any game listed in the priority list, plus the games of campaigns already in
+  progress, are searched. The queries that are gated no longer abort the whole inventory
+  fetch when they fail.
+- **Drop progress counts again.** Twitch stopped counting the watch payloads of
+  non-browser clients in October 2026; mining now keeps the drop timer moving by
+  requesting the stream's playlist chunks (upstream commit `f693b0c`).
+- **Mining only happens where drops exist.** A channel can be listed as drops-enabled in
+  the game directory and still have no drops available for your account, in which case
+  mining it looks fine while the drop never moves. The available drops of the channels
+  about to be watched are checked first, and the check fails open (if no channel reports
+  any drops at all, the channels are used as before).
+- The channel page is always fetched from `www.twitch.tv`, regardless of the API client
+  in use.
+
+### Getting started with this build
+
+1. Start the application and log in at `twitch.tv/activate` with the code shown.
+2. **Add the game you want to farm** to the priority list in the Settings tab (the entry
+   field next to the list) - that game is what campaign discovery searches for. Games of
+   campaigns you already have progress on are searched automatically.
+3. Set the priority mode to `Priority only` if you want to farm nothing but those games.
+
+If nothing shows up, the log (start with `--log -vvvv`, file `log.txt` next to the
+executable) contains a `Campaign discovery:` line telling how many campaigns were found.

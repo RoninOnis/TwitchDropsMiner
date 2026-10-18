@@ -5,7 +5,7 @@ from typing import Any, TypedDict, TYPE_CHECKING
 from yarl import URL
 
 from utils import json_load, json_save
-from constants import SETTINGS_PATH, DEFAULT_LANG, PriorityMode
+from constants import SETTINGS_PATH, DEFAULT_LANG, DEFAULT_CLIENT_TYPE, PriorityMode
 
 if TYPE_CHECKING:
     from main import ParsedArgs
@@ -23,6 +23,8 @@ class SettingsFile(TypedDict):
     enable_badges_emotes: bool
     available_drops_check: bool
     priority_mode: PriorityMode
+    client_type: str
+    campaign_discovery: bool
 
 
 default_settings: SettingsFile = {
@@ -35,8 +37,10 @@ default_settings: SettingsFile = {
     "language": DEFAULT_LANG,
     "tray_notifications": True,
     "enable_badges_emotes": False,
-    "available_drops_check": False,
+    "available_drops_check": True,
     "priority_mode": PriorityMode.PRIORITY_ONLY,
+    "client_type": DEFAULT_CLIENT_TYPE,
+    "campaign_discovery": True,
 }
 
 
@@ -61,6 +65,8 @@ class Settings:
     enable_badges_emotes: bool
     available_drops_check: bool
     priority_mode: PriorityMode
+    client_type: str
+    campaign_discovery: bool
 
     PASSTHROUGH = ("_settings", "_args", "_altered")
 

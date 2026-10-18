@@ -245,8 +245,26 @@ class ClientType:
         (
             "Mozilla/5.0 (Linux; Android 7.1; Smart Box C1) AppleWebKit/537.36 "
             "(KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36"
-        ),
+        )
     )
+
+    @classmethod
+    def as_dict(cls) -> dict[str, ClientInfo]:
+        return {
+            "WEB": cls.WEB,
+            "MOBILE_WEB": cls.MOBILE_WEB,
+            "ANDROID_APP": cls.ANDROID_APP,
+            "SMARTBOX": cls.SMARTBOX,
+        }
+
+
+# Twitch invalidates client IDs from time to time and the app then has to move on to
+# another one: the Android app client stopped being accepted by the device code flow in
+# September 2026 (`invalid client` on every login attempt). The client is therefore a
+# setting, not a constant, and every known client is tried in turn during the login
+# process - so a future rotation is a config change instead of a code change.
+CLIENT_TYPE_ORDER: tuple[str, ...] = ("SMARTBOX", "ANDROID_APP", "MOBILE_WEB", "WEB")
+DEFAULT_CLIENT_TYPE: str = "SMARTBOX"
 
 
 class State(Enum):

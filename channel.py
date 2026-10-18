@@ -235,7 +235,9 @@ class Channel:
 
     @property
     def url(self) -> URLType:
-        return URLType(f"{self._twitch._client_type.CLIENT_URL}/{self._login}")
+        # Channel pages are always fetched from the website: an alternate client URL is
+        # only an API identity, its channel pages don't carry the settings metadata
+        return URLType(f"https://www.twitch.tv/{self._login}")
 
     @property
     def iid(self) -> str:
@@ -331,6 +333,15 @@ class Channel:
             )
             for campaign_data in available_drops
         )
+
+    def update_available_drops(self, available_drops: list[JsonType]) -> None:
+        """
+        Sets the stream's drops status based on the channel's available drops.
+
+        Used for bulk updates of channel statuses during a reload.
+        """
+        if self._stream is not None:
+            self._stream.drops_enabled = self._check_drops_enabled(available_drops)
 
     def external_update(self, channel_data: JsonType, available_drops: list[JsonType]):
         """
