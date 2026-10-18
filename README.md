@@ -11,8 +11,9 @@
 **Which build to take:** the versioned releases here (e.g. `v16.1`) are complete -
 Windows, macOS, Linux AppImage (x86_64/aarch64) and Linux PyInstaller (x86_64/aarch64), each
 named exactly like upstream's, so a build can be unpacked over an existing installation to
-update it while keeping `settings.json` and the saved login. The `dev-build` pre-release is
-the rolling build of this fork's `master`, rebuilt on every push, same as upstream's.
+update it while keeping `settings.json` and the saved login. Nothing else is published as a
+release: this fork ships one complete, tested build per version, and every push is built and
+kept as a run artifact (Actions page) rather than as a moving pre-release.
 
 This application allows you to AFK mine timed Twitch drops, without having to worry about switching channels when the one you were watching goes offline, claiming the drops, or even receiving the stream data itself. This helps you save on bandwidth and hassle.
 

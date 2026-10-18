@@ -306,60 +306,9 @@ jobs:
           name: Twitch.Drops.Miner.Linux.AppImage-${{matrix.arch}}
           path: Twitch.Drops.Miner.Linux.AppImage-${{matrix.arch}}.zip
 
-  update_releases_page:
-    name: Upload builds to Releases
-    if: github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/')
-    needs:
-      - windows
-      - linux-pyinstaller
-      - linux-appimage
-      - macos
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Set up variables
-        id: vars
-        run: |
-          echo "date_now=$(date --rfc-3339=seconds)" >> "${GITHUB_OUTPUT}"
-
-      - name: Download build artifacts from previous jobs
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Delete the existing pre-release (if present)
-        run: |
-          TAG=dev-build
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release delete "$TAG" --cleanup-tag --yes --repo "$GITHUB_REPOSITORY"
-          else
-            echo "No $TAG release; skipping delete"
-          fi
-        env:
-          GITHUB_TOKEN: ${{github.token}}
-
-      - name: Create a new dev build release
-        uses: ncipollo/release-action@v1
-        with:
-          allowUpdates: true
-          artifactErrorsFailBuild: true
-          artifacts: artifacts/*/*
-          body: |
-            **This is an automatically generated in-development pre-release version of the application, that includes the latest master branch changes.**
-            **⚠️ This build is not stable and may end up terminating with a fatal error. ⚠️**
-            **Use at your own risk.**
-
-            - Last build date: `${{steps.vars.outputs.date_now}}`
-            - Reference commit: ${{github.sha}}
-          name: Development build
-          prerelease: true
-          removeArtifacts: true
-          tag: dev-build
-
-  # A version tag publishes the complete platform matrix, exactly like the dev build above does,
-  # so that a release can never end up missing a platform build again.
+  # Master pushes only build and keep the artifacts available on the run page; binaries are
+  # published as a release when a version tag is pushed, so that the releases page carries
+  # exactly one, complete, tested build per version.
   publish_release:
     name: Publish a tagged release
     if: startsWith(github.ref, 'refs/tags/v')
