@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - "master"
+    tags:
+      - "v*"
   pull_request:
   workflow_dispatch:
 
@@ -306,7 +308,7 @@ jobs:
 
   update_releases_page:
     name: Upload builds to Releases
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/')
     needs:
       - windows
       - linux-pyinstaller
@@ -355,3 +357,55 @@ jobs:
           prerelease: true
           removeArtifacts: true
           tag: dev-build
+
+  # A version tag publishes the complete platform matrix, exactly like the dev build above does,
+  # so that a release can never end up missing a platform build again.
+  publish_release:
+    name: Publish a tagged release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - windows
+      - linux-pyinstaller
+      - linux-appimage
+      - macos
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download build artifacts from previous jobs
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create the checksums file
+        run: |
+          find artifacts -name '*.zip' -type f | sort | while read -r file; do
+            echo "$(sha256sum "$file" | cut -d' ' -f1)  $(basename "$file")"
+          done > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Publish the release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          artifactErrorsFailBuild: true
+          artifacts: "artifacts/*/*,SHA256SUMS.txt"
+          name: ${{github.ref_name}}
+          prerelease: false
+          tag: ${{github.ref_name}}
+          body: |
+            **Unofficial fix build** - a fork of
+            [DevilXD/TwitchDropsMiner](https://github.com/DevilXD/TwitchDropsMiner), carrying the
+            fixes needed after Twitch's 2026 API changes. All credit for the application itself goes
+            to DevilXD and the upstream contributors.
+
+            - Reference commit: `${{github.sha}}`
+            - Builds included: Windows, macOS, Linux AppImage (x86_64, aarch64), Linux PyInstaller
+              (x86_64, aarch64), with `SHA256SUMS.txt` covering all of them.
+
+            The builds keep their original file names on purpose: unpack one over an existing
+            installation to update it while keeping `settings.json` and the login.
+
+            Not tested on hardware: the macOS build (and it is unsigned, so Gatekeeper will
+            complain) and both aarch64 builds - those come straight off the CI runners.

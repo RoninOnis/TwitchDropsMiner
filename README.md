@@ -1,9 +1,18 @@
 # Twitch Drops Miner
 
-> **Fork build (v16)** - a fork of [DevilXD/TwitchDropsMiner](https://github.com/DevilXD/TwitchDropsMiner)
+> **Unofficial fix build (fork)** - a fork of [DevilXD/TwitchDropsMiner](https://github.com/DevilXD/TwitchDropsMiner)
 > carrying the fixes for the September-October 2026 Twitch API changes, which left the
-> upstream `master` unable to log in and unable to see any campaign. See
-> [Fork notes](#fork-notes-what-this-build-changes) below.
+> upstream `development build` unable to log in and unable to see any campaign
+> (upstream issue [#1165](https://github.com/DevilXD/TwitchDropsMiner/issues/1165)).
+> All credit for the application goes to DevilXD and the upstream contributors; this fork
+> only carries the fixes and the packaging needed to actually run it.
+> See [Fork notes](#fork-notes-what-this-build-changes) below.
+
+**Which build to take:** the versioned releases here (e.g. `v16.1-ronin`) are complete -
+Windows, macOS, Linux AppImage (x86_64/aarch64) and Linux PyInstaller (x86_64/aarch64), each
+named exactly like upstream's, so a build can be unpacked over an existing installation to
+update it while keeping `settings.json` and the saved login. The `dev-build` pre-release is
+the rolling build of this fork's `master`, rebuilt on every push, same as upstream's.
 
 This application allows you to AFK mine timed Twitch drops, without having to worry about switching channels when the one you were watching goes offline, claiming the drops, or even receiving the stream data itself. This helps you save on bandwidth and hassle.
 
