@@ -358,3 +358,19 @@ jobs:
 
             Not tested on hardware: the macOS build (and it is unsigned, so Gatekeeper will
             complain) and both aarch64 builds - those come straight off the CI runners.
+
+            ---
+
+            **Неофициальная fix-сборка** [DevilXD/TwitchDropsMiner](https://github.com/DevilXD/TwitchDropsMiner)
+            с исправлениями под изменения API Twitch 2026 года. Все права на само приложение
+            принадлежат DevilXD и контрибьюторам апстрима.
+
+            - Коммит-основа: `${{github.sha}}`
+            - В релизе: Windows, macOS, Linux AppImage (x86_64, aarch64), Linux PyInstaller
+              (x86_64, aarch64) и `SHA256SUMS.txt` с хэшами всех сборок.
+
+            Имена файлов специально такие же, как у апстрима: сборку можно распаковать поверх уже
+            установленной, сохранив `settings.json` и логин.
+
+            На железе не проверялись: сборка для macOS (и она без подписи, так что Gatekeeper будет
+            ругаться) и обе aarch64-сборки — они взяты прямо с раннеров CI.
