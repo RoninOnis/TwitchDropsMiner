@@ -224,3 +224,42 @@ upstream application in three separate places. This fork carries the fixes:
 
 If nothing shows up, the log (start with `--log -vvvv`, file `log.txt` next to the
 executable) contains a `Campaign discovery:` line telling how many campaigns were found.
+
+### Finding the games that have drops (drop scan)
+
+Twitch stopped answering the campaigns dashboard query entirely in September 2026, so
+nothing can be looked up by campaign anymore, and the game selector cannot be filled from
+it either. The application therefore scans for the games that have drops available:
+
+1. the popular games are enumerated through the Helix API (`/helix/games/top`), which
+   still answers and uses the same account session;
+2. every one of them is checked for live drops-enabled channels through the game
+   directory;
+3. each of those channels is asked what drops are available on it, and the answers are
+   turned into campaigns.
+
+The scan runs in the background (never blocking the mining), refreshes every
+`scan_interval_hours` (6 by default), and its results are cached in `drops_scan.json`
+next to the executable. Games it finds with drops available are listed in the priority
+game selector, so they can be picked from a list instead of typed in. The scan is
+configured in `settings.json`:
+
+- `scan_drops` (default `true`) - run the scan at all;
+- `scan_interval_hours` (default `6`) - how often to refresh the results;
+- `scan_top_games` (default `120`) - how many popular games to check; a scan over 120
+  games asks about ~500 channels and takes a minute or so;
+- `auto_add_scanned_games` (default `false`) - put every scanned game into the priority
+  list automatically instead of just listing them;
+- `channel_campaigns` (default `"off"`) - also mine the campaigns that individual
+  channels offer (badges, emotes). **Every one of those seen so far is a subscriber
+  reward campaign**, and Twitch does not credit watch minutes for it unless the account is
+  subscribed to that channel - so this does nothing for the usual case. Modes: `off`,
+  `relevant` (channels of the games being farmed), `all` (plus the most watched
+  drops-enabled channels overall, capped by `channel_campaigns_limit`);
+- `available_drops_check` (default `true`) - verify that a channel actually has drops for
+  the account before mining it.
+
+An empty priority list means "mine whatever drops are available", which is the useful
+default now that the game list is built automatically. Note that adding a game to the
+priority list restricts mining to that game only while the priority mode is
+`Priority only`.

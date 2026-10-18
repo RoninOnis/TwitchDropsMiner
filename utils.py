@@ -26,7 +26,7 @@ from PIL.ImageTk import PhotoImage
 from PIL import Image as Image_module
 
 from exceptions import ExitRequest, ReloadRequest
-from constants import IS_PACKAGED, JsonType, PriorityMode
+from constants import IS_PACKAGED, JsonType, PriorityMode, CHANNEL_DROPS_GAME_ID
 from constants import _resource_path as resource_path  # noqa
 
 
@@ -455,4 +455,12 @@ class Game:
         return slug_text
 
     def is_special(self) -> bool:
-        return self.id in self.SPECIAL_GAME_IDS
+        return self.id in self.SPECIAL_GAME_IDS or self.is_channel_drops()
+
+    def is_channel_drops(self) -> bool:
+        """
+        True for the pseudo-game carrying the drops that individual channels offer
+        (badges, emotes, sub rewards). There is no real game behind it: the campaign's
+        ACL pins it to the channel that offers the reward.
+        """
+        return self.id == CHANNEL_DROPS_GAME_ID

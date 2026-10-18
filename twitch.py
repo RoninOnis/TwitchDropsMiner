@@ -32,6 +32,7 @@ from exceptions import (
 )
 from utils import (
     CHARS_HEX_LOWER,
+    isonow,
     chunk,
     timestamp,
     create_nonce,
@@ -44,8 +45,11 @@ from utils import (
 from constants import (
     CALL,
     MAX_INT,
+    SCAN_PATH,
     DUMP_PATH,
     COOKIES_PATH,
+    CHANNEL_DROPS_GAME_ID,
+    CHANNEL_DROPS_GAME_NAME,
     MAX_CHANNELS,
     GQL_QUERIES,
     WATCH_INTERVAL,
@@ -527,6 +531,8 @@ class Twitch:
         self.websocket = WebsocketPool(self)
         # Maintenance task
         self._mnt_task: asyncio.Task[None] | None = None
+        # Background drop scan task
+        self._scan_task: asyncio.Task[None] | None = None
 
     @staticmethod
     def _resolve_client_name(name: str) -> str:
@@ -600,6 +606,9 @@ class Twitch:
         if self._mnt_task is not None:
             self._mnt_task.cancel()
             self._mnt_task = None
+        if self._scan_task is not None:
+            self._scan_task.cancel()
+            self._scan_task = None
         # stop websocket, close session and save cookies
         await self.websocket.stop(clear_topics=True)
         if self._session is not None:
@@ -742,7 +751,13 @@ class Twitch:
                 # ensure the websocket is running
                 await self.websocket.start()
                 await self.fetch_inventory()
-                self.gui.set_games(set(campaign.game for campaign in self.inventory))
+                self.gui.set_games(
+                    set(
+                        campaign.game
+                        for campaign in self.inventory
+                        if not campaign.game.is_channel_drops()
+                    )
+                )
                 # Save state on every inventory fetch
                 self.save()
                 self.change_state(State.GAMES_UPDATE)
@@ -776,9 +791,12 @@ class Twitch:
                     game: Game = campaign.game
                     if (
                         game not in self.wanted_games  # isn't already there
+                        # the pseudo-game of the channel campaigns is never "wanted"
+                        and not game.is_channel_drops()
                         # and isn't excluded by list or priority mode
                         and game.name not in exclude
-                        and (not priority_only or game.name in priority)
+                        # an empty priority list means "mine whatever is available"
+                        and (not priority_only or not priority or game.name in priority)
                         # and can be progressed within the next hour
                         and campaign.can_earn_within(next_hour)
                     ):
@@ -821,7 +839,16 @@ class Twitch:
                         del channels[channel.id]
                         channel.remove()
                     del to_remove_channels, to_remove_topics
-                if self.wanted_games:
+                channel_campaigns_available: bool = any(
+                    campaign.game.is_channel_drops()
+                    and campaign.can_earn_within(
+                        datetime.now(timezone.utc) + timedelta(hours=1)
+                    )
+                    for campaign in self.inventory
+                )
+                if self.wanted_games or channel_campaigns_available:
+                    # channel campaigns don't need a game to be selected - they are
+                    # pinned to their channel by the ACL, so they can be mined on their own
                     self.change_state(State.CHANNELS_FETCH)
                 else:
                     # with no games available, we switch to IDLE after cleanup
@@ -841,7 +868,12 @@ class Twitch:
                 next_hour = datetime.now(timezone.utc) + timedelta(hours=1)
                 for campaign in self.inventory:
                     if (
-                        campaign.game in self.wanted_games
+                        (
+                            campaign.game in self.wanted_games
+                            # channel campaigns are pinned to their channel by the ACL, so
+                            # they don't depend on their game being selected
+                            or campaign.game.is_channel_drops()
+                        )
                         and campaign.can_earn_within(next_hour)
                     ):
                         if campaign.allowed_channels:
@@ -1132,6 +1164,7 @@ class Twitch:
         self.gui.tray.change_icon("active")
         self.gui.channels.set_watching(channel)
         self.watching_channel.set(channel)
+        logger.info(f"Watching: {channel.name} (game: {channel.game or 'unknown'})")
         if update_status:
             status_text = _("status", "watching").format(channel=channel.name)
             self.print(status_text)
@@ -1491,6 +1524,389 @@ class Twitch:
                 merged[key] = secondary_data[key]
         return merged
 
+    @staticmethod
+    def _is_watch_based_campaign(campaign_data: JsonType) -> bool:
+        """
+        True if at least one of the campaign's drops is earned by watching the stream.
+
+        Channel campaigns often ask for gifted subscriptions instead, which no amount of
+        watching will ever progress - those must not be picked up, or the miner looks
+        like it works while the counter can never move.
+        """
+        return any(
+            (drop.get("requiredMinutesWatched") or 0) > 0 and not drop.get("requiredSubs")
+            for drop in campaign_data.get("timeBasedDrops") or []
+        )
+
+    def _build_channel_campaign(
+        self, campaign_data: JsonType, channel: Channel
+    ) -> JsonType | None:
+        """
+        Converts a campaign offered by a single channel into one the miner can work with.
+
+        Only the drops earnable by watching are kept, and the channel offering them is
+        set as the campaign's ACL, so the campaign is only ever mined on that channel.
+        """
+        timed_drops: list[JsonType] = []
+        for drop_data in campaign_data.get("timeBasedDrops") or []:
+            required_minutes: int = drop_data.get("requiredMinutesWatched") or 0
+            if required_minutes <= 0 or drop_data.get("requiredSubs"):
+                continue
+            benefit_edges: list[JsonType] = []
+            for edge in drop_data.get("benefitEdges") or []:
+                benefit: JsonType = dict(edge["benefit"])
+                benefit.setdefault("distributionType", "UNKNOWN")
+                benefit.setdefault("imageAssetURL", campaign_data.get("imageURL") or "")
+                benefit_edges.append({**edge, "benefit": benefit})
+            timed_drops.append({
+                "id": drop_data["id"],
+                "name": drop_data.get("name") or campaign_data.get("name") or channel.name,
+                "startAt": drop_data.get("startAt") or campaign_data.get("startAt"),
+                "endAt": drop_data.get("endAt") or campaign_data["endAt"],
+                "requiredMinutesWatched": required_minutes,
+                "preconditionDrops": None,
+                "benefitEdges": benefit_edges,
+            })
+        if not timed_drops:
+            return None
+        return {
+            "id": campaign_data["id"],
+            "name": campaign_data.get("name") or f"{channel.name} rewards",
+            "game": {
+                "id": CHANNEL_DROPS_GAME_ID,
+                "name": CHANNEL_DROPS_GAME_NAME,
+                "displayName": CHANNEL_DROPS_GAME_NAME,
+                "boxArtURL": campaign_data.get("imageURL") or "",
+            },
+            "self": {"isAccountConnected": True},
+            "accountLinkURL": "",
+            "startAt": min(drop["startAt"] for drop in timed_drops),
+            "endAt": campaign_data["endAt"],
+            "status": "ACTIVE",
+            "allow": {
+                "channels": [
+                    {
+                        "id": str(channel.id),
+                        "name": channel._login,
+                        "displayName": channel._display_name,
+                    }
+                ],
+                "isEnabled": True,
+            },
+            "timeBasedDrops": timed_drops,
+        }
+
+    async def helix_request(self, path: str, params: JsonType | None = None) -> JsonType:
+        """
+        Queries the Helix API with the account's own token.
+
+        Needed because GQL can no longer be asked what campaigns exist: Helix still
+        answers the popular games list and the live drops-enabled channels, and those are
+        what the drop scan is built from.
+        """
+        auth_state = await self.get_auth()
+        url = URL(f"https://api.twitch.tv/helix/{path}")
+        if params:
+            url = url.with_query({key: str(value) for key, value in params.items()})
+        headers = {
+            "Authorization": f"Bearer {auth_state.access_token}",
+            "Client-Id": self._client_type.CLIENT_ID,
+        }
+        async with self.request("GET", url, headers=headers) as response:
+            if response.status != 200:
+                raise RequestException(f"Helix {path}: HTTP {response.status}")
+            return await response.json()
+
+    async def helix_top_games(self, limit: int) -> list[Game]:
+        games: list[Game] = []
+        cursor: str | None = None
+        while len(games) < limit:
+            params: JsonType = {"first": min(100, limit - len(games))}
+            if cursor is not None:
+                params["after"] = cursor
+            response_json: JsonType = await self.helix_request("games/top", params)
+            for game_data in response_json.get("data") or []:
+                games.append(Game({"id": game_data["id"], "name": game_data["name"]}))
+            cursor = (response_json.get("pagination") or {}).get("cursor")
+            if not cursor:
+                break
+        return games
+
+    async def helix_drops_channels(self, pages: int = 2) -> list[Channel]:
+        """
+        Live channels Twitch itself tags as drops-enabled, most watched first.
+        """
+        channels: list[Channel] = []
+        seen: set[int] = set()
+        cursor: str | None = None
+        for _page in range(pages):
+            params: JsonType = {"first": 100}
+            if cursor is not None:
+                params["after"] = cursor
+            response_json: JsonType = await self.helix_request("streams", params)
+            for stream_data in response_json.get("data") or []:
+                if "DropsEnabled" not in (stream_data.get("tags") or []):
+                    continue
+                channel_id = int(stream_data["user_id"])
+                if channel_id in seen:
+                    continue
+                seen.add(channel_id)
+                channels.append(
+                    Channel(
+                        self,
+                        id=channel_id,
+                        login=stream_data["user_login"],
+                        display_name=stream_data["user_name"],
+                    )
+                )
+            cursor = (response_json.get("pagination") or {}).get("cursor")
+            if not cursor:
+                break
+        return channels
+
+    def load_scan_cache(self) -> tuple[JsonType, bool]:
+        """
+        Returns the last drop scan results, and whether they are stale.
+        """
+        try:
+            with open(SCAN_PATH, encoding="utf8") as scan_file:
+                scan_data: JsonType = json.load(scan_file)
+        except (OSError, ValueError):
+            return {}, True
+        try:
+            scanned_at = timestamp(scan_data["scanned_at"])
+        except (KeyError, ValueError):
+            return {}, True
+        interval = timedelta(hours=max(1, self.settings.scan_interval_hours))
+        return scan_data, datetime.now(timezone.utc) - scanned_at > interval
+
+    async def scan_drops(self) -> JsonType:
+        """
+        Builds the list of games with drops available for the account, and the campaigns
+        behind them (game campaigns and channel campaigns).
+
+        Twitch answers the campaigns dashboard query with nothing at all since Sep 2026,
+        so nothing can be looked up by campaign: instead the popular games are enumerated
+        through Helix, every one of them is checked for live drops-enabled channels, and
+        each of those channels reports the campaigns available to this account.
+        """
+        games: dict[str, Game] = {}
+        try:
+            for game in await self.helix_top_games(self.settings.scan_top_games):
+                games[game.name] = game
+        except (MinerException, RequestException) as exc:
+            logger.warning(f"Drop scan: unable to fetch the popular games list: {exc}")
+        # games of the campaigns we already know, and of the priority list, always count
+        for campaign in self.inventory:
+            if not campaign.game.is_channel_drops():
+                games.setdefault(campaign.game.name, campaign.game)
+        for game_name in self.settings.priority:
+            games.setdefault(game_name, Game({"id": 0, "name": game_name}))
+        excluded_names: set[str] = {name.casefold() for name in self.settings.exclude}
+        games = {
+            name: game for name, game in games.items() if name.casefold() not in excluded_names
+        }
+
+        # channels to ask about: live drops-enabled channels of every candidate game
+        channels: dict[int, Channel] = {}
+        channel_games: dict[int, Game] = {}
+        for game in games.values():
+            try:
+                game_channels = await self.get_live_streams(game, limit=10)
+            except MinerException:
+                logger.log(CALL, f"Drop scan: no live drops-enabled channels for: {game.name}")
+                continue
+            for channel in game_channels:
+                channels[channel.id] = channel
+                channel_games[channel.id] = game
+        if self.settings.channel_campaigns == "all":
+            # additionally ask about the most watched drops-enabled channels overall
+            try:
+                for channel in await self.helix_drops_channels():
+                    channels.setdefault(channel.id, channel)
+            except (MinerException, RequestException) as exc:
+                logger.warning(f"Drop scan: unable to fetch drops-enabled channels: {exc}")
+        if not channels:
+            logger.warning("Drop scan: no live drops-enabled channels found at all")
+            return {}
+
+        # ask every channel what drops are available on it
+        available_drops_ops: list[GQLOperation] = [
+            GQL_QUERIES["AvailableDrops"].with_variables({"channelID": str(channel_id)})
+            for channel_id in channels
+        ]
+        game_campaigns: dict[str, JsonType] = {}
+        raw_channel_campaigns: dict[str, JsonType] = {}
+        channel_campaigns: dict[str, JsonType] = {}
+        games_with_drops: set[str] = set()
+        for available_drops_chunk in chunk(available_drops_ops, 20):
+            try:
+                response_list: list[JsonType] = await self.gql_request(available_drops_chunk)
+            except MinerException as exc:
+                logger.warning(f"Drop scan: available drops batch failed: {exc}")
+                continue
+            for response_json in response_list:
+                channel_info: JsonType | None = response_json["data"]["channel"]
+                if channel_info is None:
+                    continue
+                channel = channels[int(channel_info["id"])]
+                channel_game: Game | None = channel_games.get(channel.id)
+                for campaign_data in channel_info["viewerDropCampaigns"] or []:
+                    if campaign_data.get("game") is not None:
+                        if campaign_data["id"] in game_campaigns:
+                            continue
+                        if not campaign_data.get("timeBasedDrops"):
+                            continue
+                        built = self._build_game_campaign(campaign_data)
+                        if built is not None:
+                            game_campaigns[campaign_data["id"]] = built
+                            games_with_drops.add(built["game"]["displayName"])
+                        continue
+                    # a campaign offered by this channel itself (a badge, an emote, ...)
+                    raw_channel_campaigns.setdefault(
+                        campaign_data["id"], {"data": campaign_data, "channel": channel}
+                    )
+        for campaign_id, entry in raw_channel_campaigns.items():
+            campaign_data: JsonType = entry["data"]
+            channel: Channel = entry["channel"]
+            channel_game = channel_games.get(channel.id)
+            if not self._is_watch_based_campaign(campaign_data):
+                # nothing here can be earned by watching, ex. gifted-sub rewards
+                continue
+            if self.settings.channel_campaigns == "off":
+                continue
+            if self.settings.channel_campaigns != "all" and (
+                channel_game is None
+                or (channel_game.name not in self.settings.priority and channel_game not in self.wanted_games)
+            ):
+                # "relevant" mode: only for the games actually being farmed
+                continue
+            built = self._build_channel_campaign(campaign_data, channel)
+            if built is None:
+                continue
+            channel_campaigns[campaign_id] = built
+            games_with_drops.add(built["game"]["displayName"])
+        if len(channel_campaigns) > self.settings.channel_campaigns_limit:
+            # keep the ones ending soonest, the rest is likely to expire anyway
+            ordered = sorted(
+                channel_campaigns.items(), key=lambda item: item[1]["endAt"]
+            )[: self.settings.channel_campaigns_limit]
+            channel_campaigns = dict(ordered)
+
+        scan_data: JsonType = {
+            "scanned_at": isonow(),
+            "channels_asked": len(channels),
+            "games_with_drops": sorted(games_with_drops),
+            "campaigns": game_campaigns,
+            "channel_campaigns": channel_campaigns,
+        }
+        try:
+            with open(SCAN_PATH, "w", encoding="utf8") as scan_file:
+                json.dump(scan_data, scan_file, ensure_ascii=False, indent=1)
+        except OSError as exc:
+            logger.warning(f"Drop scan: unable to save the results: {exc}")
+        logger.info(
+            f"Drop scan: {len(channels)} channels asked, "
+            f"{len(game_campaigns)} game campaign(s) and "
+            f"{len(channel_campaigns)} channel campaign(s) available, "
+            f"{len(games_with_drops)} game(s) with drops"
+        )
+        if self.settings.auto_add_scanned_games:
+            added = [
+                name
+                for name in sorted(games_with_drops)
+                if name != CHANNEL_DROPS_GAME_NAME and name not in self.settings.priority
+            ]
+            if added:
+                self.settings.priority.extend(added)
+                self.settings.save()
+                logger.info(f"Drop scan: added {len(added)} game(s) to the priority list")
+        return scan_data
+
+    def start_scan(self) -> None:
+        """
+        Starts a drop scan in the background, unless one is already running.
+
+        Kept out of the mining loop on purpose: a scan takes a minute or so, and the
+        mining must keep sending watch payloads while it runs.
+        """
+        if self._scan_task is not None and not self._scan_task.done():
+            return
+        self._scan_task = asyncio.create_task(self._scan_task_wrapper())
+
+    async def _scan_task_wrapper(self) -> None:
+        try:
+            scan_data = await self.scan_drops()
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            logger.warning(f"Drop scan failed: {exc}")
+            return
+        if scan_data:
+            # pick the new campaigns up on the next inventory fetch
+            self.change_state(State.INVENTORY_FETCH)
+
+    def _build_game_campaign(self, campaign_data: JsonType) -> JsonType | None:
+        """
+        Turns one campaign as reported by the available drops query into campaign data,
+        which is the same shape as what the (dead) campaigns dashboard used to return.
+        """
+        time_based_drops: list[JsonType] = campaign_data.get("timeBasedDrops") or []
+        if not time_based_drops:
+            return None
+        game_data: JsonType = campaign_data["game"]
+        game_name: str = game_data.get("displayName") or game_data["name"]
+        # keep the spelling the user typed in the priority list, so that the campaign
+        # matches it (the priority comparisons are case-sensitive)
+        game_name = next(
+            (
+                priority_name
+                for priority_name in self.settings.priority
+                if priority_name.casefold() == game_name.casefold()
+            ),
+            game_name,
+        )
+        acl_channels: list[JsonType] = list(
+            (campaign_data.get("allow") or {}).get("channels") or []
+        )
+        timed_drops: list[JsonType] = []
+        for drop_data in time_based_drops:
+            benefit_edges: list[JsonType] = []
+            for edge in drop_data.get("benefitEdges") or []:
+                benefit: JsonType = dict(edge["benefit"])
+                benefit.setdefault("distributionType", "UNKNOWN")
+                benefit.setdefault("imageAssetURL", campaign_data.get("imageURL") or "")
+                benefit_edges.append({**edge, "benefit": benefit})
+            timed_drops.append({
+                "id": drop_data["id"],
+                "name": drop_data["name"],
+                "startAt": drop_data["startAt"],
+                "endAt": drop_data["endAt"],
+                "requiredMinutesWatched": drop_data["requiredMinutesWatched"],
+                "preconditionDrops": drop_data.get("preconditionDrops"),
+                "benefitEdges": benefit_edges,
+            })
+        return {
+            "id": campaign_data["id"],
+            "name": campaign_data["name"],
+            "game": {
+                "id": game_data["id"],
+                "name": game_name,
+                "displayName": game_name,
+                "boxArtURL": (
+                    "https://static-cdn.jtvnw.net/ttv-boxart/"
+                    f"{game_data['id']}_IGDB-285x380.jpg"
+                ),
+            },
+            "self": {"isAccountConnected": True},
+            "accountLinkURL": campaign_data.get("detailsURL") or "",
+            "startAt": min(drop["startAt"] for drop in timed_drops),
+            "endAt": campaign_data["endAt"],
+            "status": "ACTIVE",
+            "allow": {"channels": acl_channels, "isEnabled": True},
+            "timeBasedDrops": timed_drops,
+        }
+
     async def discover_channel_campaigns(
         self, known_campaigns: dict[str, JsonType]
     ) -> dict[str, JsonType]:
@@ -1690,8 +2106,22 @@ class Twitch:
             for task in fetch_campaigns_tasks:
                 task.cancel()
             raise
-        # if we can't be told about campaigns by Twitch, go looking for them ourselves
-        if self.settings.campaign_discovery:
+        # Twitch can't be asked about campaigns anymore, so they come from the drop scan
+        scan_data: JsonType = {}
+        if self.settings.scan_drops:
+            scan_data, scan_is_stale = self.load_scan_cache()
+            for scan_key in ("campaigns", "channel_campaigns"):
+                if scan_key == "channel_campaigns" and self.settings.channel_campaigns == "off":
+                    # not wanted: don't resurrect campaigns from an older scan either
+                    continue
+                for campaign_id, campaign_data in (scan_data.get(scan_key) or {}).items():
+                    inventory_data.setdefault(campaign_id, campaign_data)
+            if scan_is_stale:
+                # keep mining what we have, refresh the list in the background
+                logger.info("Drop scan: the results are stale, scanning in the background")
+                self.start_scan()
+        if not scan_data and self.settings.campaign_discovery:
+            # fallback for setups with the drop scan turned off
             status_update(_("gui", "status", "fetching_campaigns"))
             try:
                 discovered_campaigns = await self.discover_channel_campaigns(inventory_data)
@@ -1821,15 +2251,17 @@ class Twitch:
             )
         except GQLException as exc:
             raise MinerException(f"Game: {game.slug}") from exc
-        if "game" in response["data"]:
-            return [
-                Channel.from_directory(
-                    self, stream_channel_data["node"], drops_enabled=drops_enabled
-                )
-                for stream_channel_data in response["data"]["game"]["streams"]["edges"]
-                if stream_channel_data["node"]["broadcaster"] is not None
-            ]
-        return []
+        game_data: JsonType | None = response["data"].get("game")
+        if game_data is None:
+            # the slug doesn't resolve to a game (ex. the "Special Events" bucket)
+            return []
+        return [
+            Channel.from_directory(
+                self, stream_channel_data["node"], drops_enabled=drops_enabled
+            )
+            for stream_channel_data in game_data["streams"]["edges"]
+            if stream_channel_data["node"]["broadcaster"] is not None
+        ]
 
     async def refresh_available_drops(self, channels: abc.Iterable[Channel]) -> None:
         """

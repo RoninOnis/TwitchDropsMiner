@@ -26,3 +26,6 @@ settings.json
 /*.AppImage.zsync
 .DS_Store
 *.app
+
+# Runtime scan cache (account-specific, never commit)
+/drops_scan.json

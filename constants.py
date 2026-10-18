@@ -106,7 +106,13 @@ LOCK_PATH = Path(WORKING_DIR, "lock.file")
 CACHE_PATH = Path(WORKING_DIR, "cache")
 CACHE_DB = Path(CACHE_PATH, "mapping.json")
 COOKIES_PATH = Path(WORKING_DIR, "cookies.jar")
+SCAN_PATH = Path(WORKING_DIR, "drops_scan.json")
 SETTINGS_PATH = Path(WORKING_DIR, "settings.json")
+# Pseudo-game carrying the drops that individual channels offer (badges, emotes, sub
+# rewards). Not a real Twitch game: it exists so these campaigns can reuse the normal
+# campaign machinery, with their ACL pinning them to the offering channel.
+CHANNEL_DROPS_GAME_ID: int = -1
+CHANNEL_DROPS_GAME_NAME: str = "Drops on channels"
 # Typing
 JsonType = Dict[str, Any]
 URLType = NewType("URLType", str)

@@ -25,6 +25,12 @@ class SettingsFile(TypedDict):
     priority_mode: PriorityMode
     client_type: str
     campaign_discovery: bool
+    scan_drops: bool
+    scan_interval_hours: int
+    scan_top_games: int
+    channel_campaigns: str
+    channel_campaigns_limit: int
+    auto_add_scanned_games: bool
 
 
 default_settings: SettingsFile = {
@@ -41,6 +47,18 @@ default_settings: SettingsFile = {
     "priority_mode": PriorityMode.PRIORITY_ONLY,
     "client_type": DEFAULT_CLIENT_TYPE,
     "campaign_discovery": True,
+    # how the games that have drops are found (Twitch stopped listing campaigns at all)
+    "scan_drops": True,
+    "scan_interval_hours": 6,
+    "scan_top_games": 120,
+    # "off" | "relevant" (channels of the games in the priority list and of the games
+    # already being mined) | "all" (every watch-based channel campaign found)
+    # NOTE: off by default - every channel campaign seen so far is a subscriber reward
+    # campaign (isRewardCampaign), and Twitch does not credit watch minutes for those
+    # unless the account is subscribed to the channel. Turn on to try, if subscribed.
+    "channel_campaigns": "off",
+    "channel_campaigns_limit": 50,
+    "auto_add_scanned_games": False,
 }
 
 
@@ -67,6 +85,12 @@ class Settings:
     priority_mode: PriorityMode
     client_type: str
     campaign_discovery: bool
+    scan_drops: bool
+    scan_interval_hours: int
+    scan_top_games: int
+    channel_campaigns: str
+    channel_campaigns_limit: int
+    auto_add_scanned_games: bool
 
     PASSTHROUGH = ("_settings", "_args", "_altered")
 
