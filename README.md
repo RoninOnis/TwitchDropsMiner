@@ -8,7 +8,7 @@
 > only carries the fixes and the packaging needed to actually run it.
 > See [Fork notes](#fork-notes-what-this-build-changes) below.
 
-**Which build to take:** the versioned releases here (e.g. `v16.1-ronin`) are complete -
+**Which build to take:** the versioned releases here (e.g. `v16.1`) are complete -
 Windows, macOS, Linux AppImage (x86_64/aarch64) and Linux PyInstaller (x86_64/aarch64), each
 named exactly like upstream's, so a build can be unpacked over an existing installation to
 update it while keeping `settings.json` and the saved login. The `dev-build` pre-release is
