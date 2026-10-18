@@ -42,9 +42,11 @@ Every several seconds, the application pretends to watch a particular stream by 
 
 ### Pictures:
 
-![Main](https://user-images.githubusercontent.com/4180725/164298155-c0880ad7-6423-4419-8d73-f3c053730a1b.png)
-![Inventory](https://user-images.githubusercontent.com/4180725/164298315-81cae0d2-24a4-4822-a056-154fd763c284.png)
-![Settings](https://user-images.githubusercontent.com/4180725/164298391-b13ad40d-3881-436c-8d4c-34e2bbe33a78.png)
+![Main: status, the channel being watched and the drop progress](images/main.jpg)
+![Inventory: active campaigns and drop progress](images/inventory.jpg)
+![Settings: game priority, exclusions and the scan options](images/settings.jpg)
+
+Top to bottom: the main tab, the campaign inventory, and the settings.
 
 ### Notes:
 
