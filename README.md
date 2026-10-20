@@ -132,13 +132,13 @@ macOS, Linux AppImage (x86_64/aarch64) и Linux PyInstaller (x86_64/aarch64), и
   заблокирует его** при первом запуске (со словами «The application is damaged and can't be
   opened»).
   - **Как это исправить**: откройте Терминал в каталоге с приложением (или перейдите туда через
-    `cd путь/к/каталогу`) и введите `xattr -cr Twitch Drops Miner (by DevilXD).app`, либо просто
+    `cd путь/к/каталогу`) и введите `xattr -cr Twitch Drops Miner.app`, либо просто
     наберите `xattr -cr ` (обязательно с пробелом в конце), перетащите файл
-    `Twitch Drops Miner (by DevilXD).app` в окно терминала (путь подставится автоматически) и
+    `Twitch Drops Miner.app` в окно терминала (путь подставится автоматически) и
     нажмите Enter.
 - Постоянные файлы (такие как `cookies.jar`, `settings.json`, `lock.file`, `drops_scan.json`, `games_catalogue.json` и
   каталог `cache`) хранятся внутри bundle приложения, в
-  `Twitch Drops Miner (by DevilXD).app/Contents/MacOS` (чтобы их увидеть, нажмите на приложение
+  `Twitch Drops Miner.app/Contents/MacOS` (чтобы их увидеть, нажмите на приложение
   правой кнопкой и выберите «Show Package Contents»).
 
 ### Продвинутое использование:
