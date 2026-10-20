@@ -1630,9 +1630,7 @@ class SettingsPanel:
         master.columnconfigure(0, weight=1)
         # use a frame to center the content within the tab
         center_frame = ttk.Frame(master)
-        center_frame.grid(column=0, row=0, sticky="nsew")
-        # the priority and exclude lists stretch downwards with the window
-        center_frame.rowconfigure(1, weight=1)
+        center_frame.grid(column=0, row=0)
 
         # General section
         general_frame = ttk.LabelFrame(
@@ -1768,7 +1766,7 @@ class SettingsPanel:
         priority_frame = ttk.LabelFrame(
             center_frame, padding=(4, 0, 4, 4), text=_("gui", "settings", "priority")
         )
-        priority_frame.grid(column=1, row=0, rowspan=2, sticky="nsew")
+        priority_frame.grid(column=1, row=0, rowspan=3, sticky="nsew")
         self._priority_entry = PlaceholderCombobox(
             priority_frame, placeholder=_("gui", "settings", "game_name"), width=30
         )
@@ -1779,7 +1777,7 @@ class SettingsPanel:
         ).grid(column=1, row=0, sticky="nsew")
         self._priority_list = PaddedListbox(
             priority_frame,
-            height=18,
+            height=12,
             padding=(1, 0),
             activestyle="none",
             selectmode="single",
@@ -1830,7 +1828,7 @@ class SettingsPanel:
         exclude_frame = ttk.LabelFrame(
             center_frame, padding=(4, 0, 4, 4), text=_("gui", "settings", "exclude")
         )
-        exclude_frame.grid(column=2, row=0, rowspan=2, sticky="nsew")
+        exclude_frame.grid(column=2, row=0, rowspan=3, sticky="nsew")
         self._exclude_entry = PlaceholderCombobox(
             exclude_frame, placeholder=_("gui", "settings", "game_name"), width=26
         )
@@ -1840,7 +1838,7 @@ class SettingsPanel:
         ).grid(column=1, row=0)
         self._exclude_list = PaddedListbox(
             exclude_frame,
-            height=18,
+            height=12,
             padding=(1, 0),
             activestyle="none",
             selectmode="single",
