@@ -154,20 +154,6 @@ macOS, Linux AppImage (x86_64/aarch64) и Linux PyInstaller (x86_64/aarch64), и
 - [Поищите по issues](https://github.com/RoninOnis/TwitchDropsMiner/issues?q=sort%3Aupdated-desc%20is%3Aissue) - возможно, о вашей проблеме уже писали.  
 - Если ещё не писали - откройте новый issue с описанием проблемы.
 
-Если приложение вам нравится и оказалось полезным, автор просит поддержать его небольшой суммой.
-Спасибо!
-
-<div align="center">
-
-[![Buy me a coffee](https://i.imgur.com/cL95gzE.png)](
-    https://www.buymeacoffee.com/DevilXD
-)
-[![Support me on Patreon](https://i.imgur.com/Mdkb9jq.png)](
-    https://www.patreon.com/bePatron?u=26937862
-)
-
-</div>
-
 ### Цели проекта:
 
 Twitch Drops Miner (сокращённо TDM) задумывался с несколькими простыми целями. А именно:
