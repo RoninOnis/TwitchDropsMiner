@@ -350,11 +350,34 @@ jobs:
             to DevilXD and the upstream contributors.
 
             - Reference commit: `${{github.sha}}`
-            - Builds included: Windows, macOS, Linux AppImage (x86_64, aarch64), Linux PyInstaller
-              (x86_64, aarch64), with `SHA256SUMS.txt` covering all of them.
+
+            **What is new in 16.2** - the game list grows instead of starting from scratch:
+
+            - **The drop scan remembers what it found.** Twitch lists no games with drops anymore,
+              so the scan used to guess from the popular games list and could never reach the niche
+              titles the drops usually sit on. Every game it has seen is now kept in
+              `games_catalogue.json` and checked again on the following scans, so the coverage grows
+              with every scan. Games that never had drops and haven't been popular for 30 days are
+              forgotten, so the file does not grow without end.
+            - **Scan interval is a setting, in minutes:** 5, 10, 30 or 60, picked in the new "Drop
+              scan" settings section. An existing `settings.json` is migrated from the old hourly
+              value automatically. The scan is now scheduled by its own loop, so a short interval is
+              not tied to the inventory refresh anymore.
+            - **"Scan now" button**, plus a line showing when the last scan happened, how many games
+              with drops it found and how many games are in the catalogue.
+            - The "add found games to the priority list" option is a checkbox next to the scan
+              controls now, not a `settings.json` key.
+            - The window title and the packaged app name carry no "(by DevilXD)", and the Help tab
+              carries an About box listing both authors, DevilXD and 0xONI, as links.
+
+            **Builds included:** Windows, macOS, Linux AppImage (x86_64, aarch64), Linux PyInstaller
+            (x86_64, aarch64), with `SHA256SUMS.txt` covering all of them.
 
             The builds keep their original file names on purpose: unpack one over an existing
-            installation to update it while keeping `settings.json` and the login.
+            installation to update it while keeping `settings.json`, the login and the scan cache.
+            Close the running application first - the executable is locked while it runs, and only a
+            single instance can run at a time. The executable itself is no longer named
+            "(by DevilXD)", so on Windows the old file can be deleted after unpacking.
 
             Not tested on hardware: the macOS build (and it is unsigned, so Gatekeeper will
             complain) and both aarch64 builds - those come straight off the CI runners.
@@ -366,11 +389,35 @@ jobs:
             принадлежат DevilXD и контрибьюторам апстрима.
 
             - Коммит-основа: `${{github.sha}}`
-            - В релизе: Windows, macOS, Linux AppImage (x86_64, aarch64), Linux PyInstaller
-              (x86_64, aarch64) и `SHA256SUMS.txt` с хэшами всех сборок.
+
+            **Что нового в 16.2** — список игр накапливается, а не собирается заново:
+
+            - **Скан дропов запоминает найденное.** Перечислить игры с дропами у Twitch больше
+              нечем, поэтому скан угадывал по списку популярных игр и никогда не доходил до нишевых
+              тайтлов, где дропы обычно и висят. Теперь каждая игра, которую он когда-либо видел,
+              хранится в `games_catalogue.json` и проверяется на следующих сканах: охват растёт с
+              каждым сканом. Игры без дропов и не бывшие популярными 30 дней забываются, чтобы файл
+              не рос бесконечно.
+            - **Интервал скана — настройка в минутах:** 5, 10, 30 или 60, выбирается в новом
+              разделе настроек «Скан дропов». Существующий `settings.json` миграциируется со
+              старого значения в часах автоматически. Скан теперь ведёт собственный цикл, поэтому
+              короткий интервал не привязан к обновлению инвентаря.
+            - **Кнопка «Сканировать сейчас»** и строка статуса: когда был последний скан, сколько
+              игр с дропами он нашёл и сколько игр в каталоге.
+            - Опция «добавлять найденные игры в приоритет» теперь чекбокс рядом с настройками
+              скана, а не ключ в `settings.json`.
+            - В заголовке окна и в имени упакованного приложения больше нет «(by DevilXD)», а на
+              вкладке «Помощь» есть блок «О программе» с обоими авторами — DevilXD и 0xONI —
+              в виде ссылок.
+
+            **В релизе:** Windows, macOS, Linux AppImage (x86_64, aarch64), Linux PyInstaller
+            (x86_64, aarch64) и `SHA256SUMS.txt` с хэшами всех сборок.
 
             Имена файлов специально такие же, как у апстрима: сборку можно распаковать поверх уже
-            установленной, сохранив `settings.json` и логин.
+            установленной, сохранив `settings.json`, логин и кэш скана. Перед заменой закройте
+            приложение — запущенный исполняемый файл заблокирован, и одновременно может работать
+            только один экземпляр. Сам исполняемый файл больше не называется «(by DevilXD)», так
+            что на Windows старый файл можно удалить после распаковки.
 
             На железе не проверялись: сборка для macOS (и она без подписи, так что Gatekeeper будет
             ругаться) и обе aarch64-сборки — они взяты прямо с раннеров CI.
