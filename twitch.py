@@ -1474,7 +1474,11 @@ class Twitch:
                                     "PersistedQueryNotFound",
                                 )
                             ):
-                                logger.error(
+                                # NOTE: this is a retry, not a failure - Twitch answers
+                                # "service error" to a few requests during every scan, and
+                                # the retry almost always succeeds. Kept out of the normal
+                                # output so it doesn't read like a problem.
+                                gql_logger.debug(
                                     f"Retrying a {error_dict['message']} for "
                                     f"{response_json['extensions']['operationName']}"
                                 )
