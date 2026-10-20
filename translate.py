@@ -401,7 +401,10 @@ default_translation: Translation = {
                 "never": "Not scanned yet",
                 "running": "Scanning for drops…",
                 "stale": "(stale)",
-                "status": "Last scan: {when} UTC · {drops} game(s) with drops · {total} known",
+                "status": (
+                    "Last scan: {when} UTC · games with drops: {drops} "
+                    "· in the catalogue: {total}"
+                ),
             },
             "priority_modes": {
                 "priority_only": "Priority list only",
@@ -415,6 +418,11 @@ default_translation: Translation = {
             "reload_text": "Most changes require a reload to take an immediate effect: ",
         },
         "help": {
+            "about": {
+                "name": "About",
+                "created_by": "Application created by: ",
+                "modified_by": "Modified by: ",
+            },
             "links": {
                 "name": "Useful Links",
                 "inventory": "See Twitch inventory",

@@ -1630,7 +1630,9 @@ class SettingsPanel:
         master.columnconfigure(0, weight=1)
         # use a frame to center the content within the tab
         center_frame = ttk.Frame(master)
-        center_frame.grid(column=0, row=0)
+        center_frame.grid(column=0, row=0, sticky="nsew")
+        # the priority and exclude lists stretch downwards with the window
+        center_frame.rowconfigure(1, weight=1)
 
         # General section
         general_frame = ttk.LabelFrame(
@@ -1777,7 +1779,7 @@ class SettingsPanel:
         ).grid(column=1, row=0, sticky="nsew")
         self._priority_list = PaddedListbox(
             priority_frame,
-            height=12,
+            height=18,
             padding=(1, 0),
             activestyle="none",
             selectmode="single",
@@ -1838,7 +1840,7 @@ class SettingsPanel:
         ).grid(column=1, row=0)
         self._exclude_list = PaddedListbox(
             exclude_frame,
-            height=12,
+            height=18,
             padding=(1, 0),
             activestyle="none",
             selectmode="single",
@@ -2200,6 +2202,23 @@ class HelpTab:
         bottom_frame = ttk.Frame(master)
         bottom_frame.grid(column=0, row=1, sticky="nsew")
         irow = 0
+        # About
+        about = ttk.LabelFrame(
+            center_frame, padding=(4, 0, 4, 4), text=_("gui", "help", "about", "name")
+        )
+        about.grid(column=0, row=(irow := irow + 1), sticky="nsew", padx=2)
+        ttk.Label(
+            about, text=_("gui", "help", "about", "created_by"), anchor="e"
+        ).grid(column=0, row=0, sticky="nsew", padx=(0, 4))
+        LinkLabel(
+            about, link="https://github.com/DevilXD", text="DevilXD"
+        ).grid(column=1, row=0, sticky="w")
+        ttk.Label(
+            about, text=_("gui", "help", "about", "modified_by"), anchor="e"
+        ).grid(column=0, row=1, sticky="nsew", padx=(0, 4))
+        LinkLabel(
+            about, link="https://github.com/RoninOnis", text="0xONI"
+        ).grid(column=1, row=1, sticky="w")
         # Useful links
         links = ttk.LabelFrame(
             center_frame, padding=(4, 0, 4, 4), text=_("gui", "help", "links", "name")
