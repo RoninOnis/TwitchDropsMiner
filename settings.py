@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+import json
 from typing import Any, TypedDict, TYPE_CHECKING
 
 from yarl import URL
 
 from utils import json_load, json_save
-from constants import SETTINGS_PATH, DEFAULT_LANG, DEFAULT_CLIENT_TYPE, PriorityMode
+from constants import (
+    SETTINGS_PATH,
+    DEFAULT_LANG,
+    DEFAULT_CLIENT_TYPE,
+    DEFAULT_SCAN_INTERVAL_MINUTES,
+    SCAN_INTERVAL_CHOICES,
+    PriorityMode,
+)
 
 if TYPE_CHECKING:
     from main import ParsedArgs
@@ -26,7 +34,7 @@ class SettingsFile(TypedDict):
     client_type: str
     campaign_discovery: bool
     scan_drops: bool
-    scan_interval_hours: int
+    scan_interval_minutes: int
     scan_top_games: int
     channel_campaigns: str
     channel_campaigns_limit: int
@@ -49,7 +57,7 @@ default_settings: SettingsFile = {
     "campaign_discovery": True,
     # how the games that have drops are found (Twitch stopped listing campaigns at all)
     "scan_drops": True,
-    "scan_interval_hours": 6,
+    "scan_interval_minutes": DEFAULT_SCAN_INTERVAL_MINUTES,
     "scan_top_games": 120,
     # "off" | "relevant" (channels of the games in the priority list and of the games
     # already being mined) | "all" (every watch-based channel campaign found)
@@ -86,7 +94,7 @@ class Settings:
     client_type: str
     campaign_discovery: bool
     scan_drops: bool
-    scan_interval_hours: int
+    scan_interval_minutes: int
     scan_top_games: int
     channel_campaigns: str
     channel_campaigns_limit: int
@@ -98,6 +106,7 @@ class Settings:
         self._settings: SettingsFile = json_load(SETTINGS_PATH, default_settings)
         self._args: ParsedArgs = args
         self._altered: bool = False
+        self._migrate()
 
     # default logic of reading settings is to check args first, then the settings file
     def __getattr__(self, name: str, /) -> Any:
@@ -129,3 +138,26 @@ class Settings:
     def save(self, *, force: bool = False) -> None:
         if self._altered or force:
             json_save(SETTINGS_PATH, self._settings, sort=True)
+
+    def _migrate(self) -> None:
+        # pre-16.2 kept the drop scan interval in hours, and offered nothing else.
+        # NOTE: the settings loader drops the keys it doesn't know, so the old value has
+        # to be read from the file directly.
+        try:
+            with open(SETTINGS_PATH, encoding="utf8") as settings_file:
+                raw_settings: dict[str, Any] = json.load(settings_file)
+        except (OSError, ValueError):
+            raw_settings = {}
+        old_hours = raw_settings.get("scan_interval_hours")
+        if old_hours is not None and raw_settings.get("scan_interval_minutes") is None:
+            # keep the same rhythm if the new list allows it, the longest one otherwise
+            minutes = max(1, int(old_hours)) * 60
+            self._settings["scan_interval_minutes"] = max(
+                (choice for choice in SCAN_INTERVAL_CHOICES if choice <= minutes),
+                default=min(SCAN_INTERVAL_CHOICES),
+            )
+            self._altered = True
+        # the interval has to be one of the offered ones
+        if self._settings["scan_interval_minutes"] not in SCAN_INTERVAL_CHOICES:
+            self._settings["scan_interval_minutes"] = DEFAULT_SCAN_INTERVAL_MINUTES
+            self._altered = True

@@ -47,6 +47,8 @@ from constants import (
     MAX_WEBSOCKETS,
     WS_TOPICS_LIMIT,
     OUTPUT_FORMATTER,
+    SCAN_INTERVAL_CHOICES,
+    DEFAULT_SCAN_INTERVAL_MINUTES,
     State,
     PriorityMode,
 )
@@ -1567,6 +1569,8 @@ class _SettingsVars(TypedDict):
     tray_notifications: IntVar
     enable_badges_emotes: IntVar
     available_drops_check: IntVar
+    scan_interval: StringVar
+    auto_add_scanned: IntVar
 
 
 class SettingsPanel:
@@ -1584,6 +1588,12 @@ class SettingsPanel:
                 "gui", "settings", "priority_modes", "low_availability"
             ),
         }
+
+    @cached_property
+    def SCAN_INTERVALS(self) -> dict[int, str]:
+        # NOTE: Same deal as with the priority modes - deferred translation calls.
+        unit = _("gui", "settings", "scan", "minutes")
+        return {minutes: f"{minutes} {unit}" for minutes in SCAN_INTERVAL_CHOICES}
 
     def __init__(self, manager: GUIManager, master: ttk.Widget):
         self._manager = manager
@@ -1606,6 +1616,14 @@ class SettingsPanel:
             "available_drops_check": IntVar(
                 master, int(self._settings.available_drops_check)
             ),
+            "scan_interval": StringVar(
+                master,
+                self.SCAN_INTERVALS.get(
+                    self._settings.scan_interval_minutes,
+                    self.SCAN_INTERVALS[DEFAULT_SCAN_INTERVAL_MINUTES],
+                ),
+            ),
+            "auto_add_scanned": IntVar(master, int(self._settings.auto_add_scanned_games)),
         }
         self._game_names: set[str] = set()
         master.rowconfigure(0, weight=1)
@@ -1835,19 +1853,100 @@ class SettingsPanel:
             exclude_frame, text="❌", command=self.exclude_delete, width=3, style="Large.TButton"
         ).grid(column=0, row=2, columnspan=2, sticky="nsew")
 
+        # Drop scan section
+        scan_frame = ttk.LabelFrame(
+            center_frame, padding=(4, 0, 4, 4), text=_("gui", "settings", "scan", "name")
+        )
+        scan_frame.grid(column=0, row=2, sticky="nsew")
+        ttk.Label(
+            scan_frame, text=_("gui", "settings", "scan", "interval")
+        ).grid(column=0, row=(srow := 0), sticky="e")
+        SelectCombobox(
+            scan_frame,
+            command=self.scan_interval,
+            textvariable=self._vars["scan_interval"],
+            values=list(self.SCAN_INTERVALS.values()),
+            width=8,
+            width_offset=0,
+        ).grid(column=1, row=srow, sticky="w")
+        ttk.Label(
+            scan_frame, text=_("gui", "settings", "scan", "auto_add")
+        ).grid(column=0, row=(srow := srow + 1), sticky="e")
+        ttk.Checkbutton(
+            scan_frame,
+            variable=self._vars["auto_add_scanned"],
+            command=lambda: setattr(
+                self._settings,
+                "auto_add_scanned_games",
+                bool(self._vars["auto_add_scanned"].get()),
+            ),
+        ).grid(column=1, row=srow, sticky="w")
+        ttk.Button(
+            scan_frame,
+            text=_("gui", "settings", "scan", "scan_now"),
+            command=self.scan_now,
+        ).grid(column=0, row=(srow := srow + 1), sticky="e")
+        self._scan_status = ttk.Label(
+            scan_frame, text=_("gui", "settings", "scan", "never")
+        )
+        self._scan_status.grid(column=1, row=srow, sticky="w")
+
         # Reload button
         reload_frame = ttk.Frame(center_frame)
-        reload_frame.grid(column=0, row=2, columnspan=3, pady=4)
+        reload_frame.grid(column=0, row=3, columnspan=3, pady=4)
         ttk.Label(reload_frame, text=_("gui", "settings", "reload_text")).grid(column=0, row=0)
         ttk.Button(
             reload_frame,
             text=_("gui", "settings", "reload"),
             command=self._manager._twitch.state_change(State.INVENTORY_FETCH),
         ).grid(column=1, row=0)
+        # keep the drop scan status up to date while the app is running
+        self._refresh_scan_status()
 
     def clear_selection(self) -> None:
         self._priority_list.selection_clear(0, "end")
         self._exclude_list.selection_clear(0, "end")
+
+    def scan_interval(self, event: tk.Event[ttk.Combobox]) -> None:
+        interval_name: str = self._vars["scan_interval"].get()
+        for minutes, name in self.SCAN_INTERVALS.items():
+            if interval_name == name:
+                self._settings.scan_interval_minutes = minutes
+                break
+
+    def scan_now(self) -> None:
+        self._manager._twitch.start_scan()
+        self._scan_status.config(text=_("gui", "settings", "scan", "running"))
+        self._refresh_scan_status()
+
+    def _scan_status_text(self) -> str:
+        scan_data, stale, known = self._manager._twitch.scan_status()
+        if not scan_data:
+            return _("gui", "settings", "scan", "never")
+        scanned_at: str = str(scan_data.get("scanned_at") or "")
+        when: str = scanned_at.replace("T", " ").split(".")[0][:16] or scanned_at
+        text: str = _("gui", "settings", "scan", "status").format(
+            when=when,
+            drops=len(scan_data.get("games_with_drops") or []),
+            total=known,
+        )
+        if stale:
+            text += " " + _("gui", "settings", "scan", "stale")
+        return text
+
+    def _refresh_scan_status(self) -> None:
+        try:
+            if not self._scan_status.winfo_exists():
+                return
+            if self._manager._twitch.scan_running:
+                text = _("gui", "settings", "scan", "running")
+            else:
+                text = self._scan_status_text()
+            self._scan_status.config(text=text)
+        except tk.TclError:
+            # the panel is being torn down
+            return
+        self._scan_status.after(5000, self._refresh_scan_status)
 
     def update_dark_mode(self) -> None:
         self._settings.dark_mode = bool(self._vars["dark_mode"].get())
@@ -2101,38 +2200,6 @@ class HelpTab:
         bottom_frame = ttk.Frame(master)
         bottom_frame.grid(column=0, row=1, sticky="nsew")
         irow = 0
-        # About
-        about = ttk.LabelFrame(center_frame, padding=(4, 0, 4, 4), text="About")
-        about.grid(column=0, row=(irow := irow + 1), sticky="nsew", padx=2)
-        about.columnconfigure(2, weight=1)
-        # About - created by
-        ttk.Label(
-            about, text="Application created by: ", anchor="e"
-        ).grid(column=0, row=0, sticky="nsew")
-        LinkLabel(
-            about, link="https://github.com/DevilXD", text="DevilXD"
-        ).grid(column=1, row=0, sticky="nsew")
-        # About - repo link
-        ttk.Label(about, text="Repository: ", anchor="e").grid(column=0, row=1, sticky="nsew")
-        LinkLabel(
-            about,
-            link="https://github.com/DevilXD/TwitchDropsMiner",
-            text="https://github.com/DevilXD/TwitchDropsMiner",
-        ).grid(column=1, row=1, sticky="nsew")
-        # About - donate
-        ttk.Separator(
-            about, orient="horizontal"
-        ).grid(column=0, row=2, columnspan=3, sticky="nsew")
-        ttk.Label(about, text="Donate: ", anchor="e").grid(column=0, row=3, sticky="nsew")
-        LinkLabel(
-            about,
-            link="https://www.buymeacoffee.com/DevilXD",
-            text=(
-                "If you like the application and found it useful, "
-                "please consider donating a small amount of money to support me. Thank you!"
-            ),
-            wraplength=self.WIDTH,
-        ).grid(column=1, row=3, sticky="nsew")
         # Useful links
         links = ttk.LabelFrame(
             center_frame, padding=(4, 0, 4, 4), text=_("gui", "help", "links", "name")

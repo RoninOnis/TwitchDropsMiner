@@ -87,7 +87,7 @@ Top to bottom: the main tab, the campaign inventory, and the settings.
 - The macOS version is packaged using PyInstaller into a standalone `.app` bundle, distributed as a ZIP archive.
 - Since this application is not signed with a paid Apple Developer Certificate, **macOS Gatekeeper will block it** on the first run (saying it "The application is damaged and can't be opened").
   - **To fix this**: Either open the Terminal in the folder the app is in (or navigating with `cd path/to/folder`) and enter `xattr -cr Twitch Drops Miner (by DevilXD).app` or just type `xattr -cr ` (make sure to put a space at the end), drag and drop the `Twitch Drops Miner (by DevilXD).app` file into the terminal window (this will auto-fill the path) and enter
-- Persistent files (like `cookies.jar`, `settings.json`, `lock.file` and the `cache` folder) are stored inside the application bundle in `Twitch Drops Miner (by DevilXD).app/Contents/MacOS` (to access them Right-click the application and select `Show Package Contents`)
+- Persistent files (like `cookies.jar`, `settings.json`, `lock.file` and the `cache` folder) are stored inside the application bundle in `Twitch Drops Miner.app/Contents/MacOS` (to access them Right-click the application and select `Show Package Contents`)
 
 ### Advanced Usage:
 
@@ -245,21 +245,27 @@ it either. The application therefore scans for the games that have drops availab
 
 1. the popular games are enumerated through the Helix API (`/helix/games/top`), which
    still answers and uses the same account session;
-2. every one of them is checked for live drops-enabled channels through the game
+2. every game the previous scans have ever found is added to that list (they are
+   remembered in `games_catalogue.json`), so the coverage grows with every scan and the
+   games outside the popularity top get checked too;
+3. every one of them is checked for live drops-enabled channels through the game
    directory;
-3. each of those channels is asked what drops are available on it, and the answers are
+4. each of those channels is asked what drops are available on it, and the answers are
    turned into campaigns.
 
 The scan runs in the background (never blocking the mining), refreshes every
-`scan_interval_hours` (6 by default), and its results are cached in `drops_scan.json`
-next to the executable. Games it finds with drops available are listed in the priority
-game selector, so they can be picked from a list instead of typed in. The scan is
-configured in `settings.json`:
+`scan_interval_minutes` (30 by default; the settings offer 5, 10, 30 or 60 minutes), and
+its results are cached in `drops_scan.json` next to the executable. Games it finds with
+drops available are listed in the priority game selector, so they can be picked from a
+list instead of typed in. The "Drop scan" section of the settings has a "Scan now" button
+that runs a scan immediately, without waiting for the schedule. The scan is configured in
+`settings.json`:
 
 - `scan_drops` (default `true`) - run the scan at all;
-- `scan_interval_hours` (default `6`) - how often to refresh the results;
-- `scan_top_games` (default `120`) - how many popular games to check; a scan over 120
-  games asks about ~500 channels and takes a minute or so;
+- `scan_interval_minutes` (default `30`) - how often to refresh the results (5, 10, 30 or
+  60);
+- `scan_top_games` (default `120`) - how many popular games to check on top of the already
+  known ones; a scan over 120 games asks about ~500 channels and takes a minute or so;
 - `auto_add_scanned_games` (default `false`) - put every scanned game into the priority
   list automatically instead of just listing them;
 - `channel_campaigns` (default `"off"`) - also mine the campaigns that individual

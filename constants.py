@@ -107,6 +107,12 @@ CACHE_PATH = Path(WORKING_DIR, "cache")
 CACHE_DB = Path(CACHE_PATH, "mapping.json")
 COOKIES_PATH = Path(WORKING_DIR, "cookies.jar")
 SCAN_PATH = Path(WORKING_DIR, "drops_scan.json")
+GAMES_CATALOGUE_PATH = Path(WORKING_DIR, "games_catalogue.json")
+# Drop scan refresh interval, in minutes, as offered in the settings
+SCAN_INTERVAL_CHOICES: tuple[int, ...] = (5, 10, 30, 60)
+DEFAULT_SCAN_INTERVAL_MINUTES: int = 30
+# Games that never had any drops are dropped from the catalogue after this many days
+CATALOGUE_KEEP_DAYS: int = 30
 SETTINGS_PATH = Path(WORKING_DIR, "settings.json")
 # Pseudo-game carrying the drops that individual channels offer (badges, emotes, sub
 # rewards). Not a real Twitch game: it exists so these campaigns can reuse the normal
@@ -135,7 +141,7 @@ PING_TIMEOUT = timedelta(seconds=10)
 ONLINE_DELAY = timedelta(seconds=120)
 WATCH_INTERVAL = timedelta(seconds=20)
 # Strings
-WINDOW_TITLE = f"Twitch Drops Miner v{__version__} (by DevilXD)"
+WINDOW_TITLE = f"Twitch Drops Miner v{__version__}"
 # Logging
 LOGGING_LEVELS = {
     0: logging.ERROR,

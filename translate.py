@@ -392,6 +392,17 @@ default_translation: Translation = {
                 "enable_badges_emotes": "Enable partial support for badges and emotes: ",
                 "available_drops_check": "Enable extra available drops check: ",
             },
+            "scan": {
+                "name": "Drop scan",
+                "interval": "Scan for drops every: ",
+                "minutes": "min",
+                "auto_add": "Add the found games to the priority list: ",
+                "scan_now": "Scan now",
+                "never": "Not scanned yet",
+                "running": "Scanning for drops…",
+                "stale": "(stale)",
+                "status": "Last scan: {when} UTC · {drops} game(s) with drops · {total} known",
+            },
             "priority_modes": {
                 "priority_only": "Priority list only",
                 "ending_soonest": "Ending soonest",

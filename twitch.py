@@ -46,6 +46,8 @@ from constants import (
     CALL,
     MAX_INT,
     SCAN_PATH,
+    GAMES_CATALOGUE_PATH,
+    CATALOGUE_KEEP_DAYS,
     DUMP_PATH,
     COOKIES_PATH,
     CHANNEL_DROPS_GAME_ID,
@@ -531,8 +533,13 @@ class Twitch:
         self.websocket = WebsocketPool(self)
         # Maintenance task
         self._mnt_task: asyncio.Task[None] | None = None
-        # Background drop scan task
+        # Background drop scan task, and the loop that keeps it on schedule
         self._scan_task: asyncio.Task[None] | None = None
+        self._scan_loop_task: asyncio.Task[None] | None = None
+        try:
+            self._loop: asyncio.AbstractEventLoop | None = asyncio.get_running_loop()
+        except RuntimeError:
+            self._loop = None
 
     @staticmethod
     def _resolve_client_name(name: str) -> str:
@@ -609,6 +616,9 @@ class Twitch:
         if self._scan_task is not None:
             self._scan_task.cancel()
             self._scan_task = None
+        if self._scan_loop_task is not None:
+            self._scan_loop_task.cancel()
+            self._scan_loop_task = None
         # stop websocket, close session and save cookies
         await self.websocket.stop(clear_topics=True)
         if self._session is not None:
@@ -726,6 +736,8 @@ class Twitch:
         if self._watching_task is not None:
             self._watching_task.cancel()
         self._watching_task = asyncio.create_task(self._watch_loop())
+        if self._scan_loop_task is None or self._scan_loop_task.done():
+            self._scan_loop_task = asyncio.create_task(self._scan_loop())
         # Add default topics
         self.websocket.add_topics([
             WebsocketTopic("User", "Drops", auth_state.user_id, self.process_drops),
@@ -1664,6 +1676,84 @@ class Twitch:
                 break
         return channels
 
+    def load_game_catalogue(self) -> dict[str, JsonType]:
+        """
+        Games the scan has learned about so far, keyed by name.
+
+        Twitch has no way to list the games that currently carry drops, and the popular
+        games list is a poor stand-in: the drops are usually on the niche titles. Every
+        game the scan has ever seen is remembered here, so that a game found once keeps
+        being checked on the later scans.
+        """
+        try:
+            with open(GAMES_CATALOGUE_PATH, encoding="utf8") as catalogue_file:
+                catalogue_data: JsonType = json.load(catalogue_file)
+        except (OSError, ValueError):
+            return {}
+        games = catalogue_data.get("games")
+        if not isinstance(games, dict):
+            return {}
+        return {
+            name: entry for name, entry in games.items() if isinstance(entry, dict)
+        }
+
+    def save_game_catalogue(self, catalogue: dict[str, JsonType]) -> None:
+        try:
+            with open(GAMES_CATALOGUE_PATH, "w", encoding="utf8") as catalogue_file:
+                json.dump(
+                    {"updated": isonow(), "games": catalogue},
+                    catalogue_file,
+                    ensure_ascii=False,
+                    indent=1,
+                )
+        except OSError as exc:
+            logger.warning(f"Drop scan: unable to save the games catalogue: {exc}")
+
+    def _update_game_catalogue(
+        self,
+        catalogue: dict[str, JsonType],
+        probed_games: abc.Iterable[Game],
+        games_with_drops: abc.Iterable[str],
+    ) -> dict[str, JsonType]:
+        now = isonow()
+        for game in probed_games:
+            entry = catalogue.setdefault(
+                game.name,
+                {"name": game.name, "first_seen": now, "scans": 0, "drops_found": 0},
+            )
+            entry["last_scan"] = now
+            entry["scans"] = int(entry.get("scans") or 0) + 1
+            if game.id:
+                entry["id"] = game.id
+        for name in games_with_drops:
+            entry = catalogue.setdefault(
+                name, {"name": name, "first_seen": now, "scans": 0, "drops_found": 0}
+            )
+            entry["last_drop"] = now
+            entry["drops_found"] = int(entry.get("drops_found") or 0) + 1
+        # a game that never had drops and hasn't been popular in a while is not worth
+        # checking on every scan anymore
+        keep_after = datetime.now(timezone.utc) - timedelta(days=CATALOGUE_KEEP_DAYS)
+        return {
+            name: entry
+            for name, entry in catalogue.items()
+            if entry.get("last_drop") is not None
+            or timestamp(entry.get("last_scan") or now) > keep_after
+        }
+
+    @property
+    def scan_running(self) -> bool:
+        # NOTE: the GUI is built before the task fields exist, so this has to be lenient
+        task = getattr(self, "_scan_task", None)
+        return task is not None and not task.done()
+
+    def scan_status(self) -> tuple[JsonType, bool, int]:
+        """
+        The last scan results, whether they are stale, and how many games are known.
+        """
+        scan_data, stale = self.load_scan_cache()
+        return scan_data, stale, len(self.load_game_catalogue())
+
     def load_scan_cache(self) -> tuple[JsonType, bool]:
         """
         Returns the last drop scan results, and whether they are stale.
@@ -1677,7 +1767,7 @@ class Twitch:
             scanned_at = timestamp(scan_data["scanned_at"])
         except (KeyError, ValueError):
             return {}, True
-        interval = timedelta(hours=max(1, self.settings.scan_interval_hours))
+        interval = timedelta(minutes=max(1, self.settings.scan_interval_minutes))
         return scan_data, datetime.now(timezone.utc) - scanned_at > interval
 
     async def scan_drops(self) -> JsonType:
@@ -1696,6 +1786,14 @@ class Twitch:
                 games[game.name] = game
         except (MinerException, RequestException) as exc:
             logger.warning(f"Drop scan: unable to fetch the popular games list: {exc}")
+        # every game the previous scans have found is a candidate again: the popular
+        # games list alone never covers the niche titles the drops usually sit on
+        catalogue: dict[str, JsonType] = self.load_game_catalogue()
+        for game_name, game_entry in catalogue.items():
+            games.setdefault(
+                game_name,
+                Game({"id": int(game_entry.get("id") or 0), "name": game_name}),
+            )
         # games of the campaigns we already know, and of the priority list, always count
         for campaign in self.inventory:
             if not campaign.game.is_channel_drops():
@@ -1793,9 +1891,12 @@ class Twitch:
             )[: self.settings.channel_campaigns_limit]
             channel_campaigns = dict(ordered)
 
+        catalogue = self._update_game_catalogue(catalogue, games.values(), games_with_drops)
+        self.save_game_catalogue(catalogue)
         scan_data: JsonType = {
             "scanned_at": isonow(),
             "channels_asked": len(channels),
+            "games_probed": len(games),
             "games_with_drops": sorted(games_with_drops),
             "campaigns": game_campaigns,
             "channel_campaigns": channel_campaigns,
@@ -1806,10 +1907,11 @@ class Twitch:
         except OSError as exc:
             logger.warning(f"Drop scan: unable to save the results: {exc}")
         logger.info(
-            f"Drop scan: {len(channels)} channels asked, "
+            f"Drop scan: {len(games)} game(s) checked, {len(channels)} channels asked, "
             f"{len(game_campaigns)} game campaign(s) and "
             f"{len(channel_campaigns)} channel campaign(s) available, "
-            f"{len(games_with_drops)} game(s) with drops"
+            f"{len(games_with_drops)} game(s) with drops, "
+            f"{len(catalogue)} game(s) remembered for the next scan"
         )
         if self.settings.auto_add_scanned_games:
             added = [
@@ -1830,9 +1932,40 @@ class Twitch:
         Kept out of the mining loop on purpose: a scan takes a minute or so, and the
         mining must keep sending watch payloads while it runs.
         """
-        if self._scan_task is not None and not self._scan_task.done():
+        if self.scan_running:
+            return
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            # not called from the event loop (ex. a GUI callback): hop onto it first
+            loop = getattr(self, "_loop", None)
+            if loop is None:
+                return
+            loop.call_soon_threadsafe(self.start_scan)
             return
         self._scan_task = asyncio.create_task(self._scan_task_wrapper())
+
+    async def _scan_loop(self) -> None:
+        """
+        Keeps the drop scan on the schedule picked in the settings.
+
+        The inventory fetch only happens now and then, so waiting for it would make a
+        short interval meaningless: the schedule is checked here instead, independently.
+        """
+        while True:
+            try:
+                if self.settings.scan_drops and not self.scan_running:
+                    _scan_data, stale = self.load_scan_cache()
+                    if stale:
+                        logger.info("Drop scan: the cached results are stale, scanning now")
+                        self.start_scan()
+                        while self.scan_running:
+                            await asyncio.sleep(5)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                logger.warning(f"Drop scan: schedule check failed: {exc}")
+            await asyncio.sleep(30)
 
     async def _scan_task_wrapper(self) -> None:
         try:
