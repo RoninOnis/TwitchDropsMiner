@@ -54,6 +54,8 @@ from constants import (
     SCAN_KNOWN_DROPPER_DAYS,
     SCAN_ESCALATION_GAMES,
     GAMES_SEED_PATH,
+    GAMES_SEED_URL,
+    GAMES_SEED_CACHE_PATH,
     DUMP_PATH,
     COOKIES_PATH,
     CHANNEL_DROPS_GAME_ID,
@@ -743,7 +745,8 @@ class Twitch:
             self._watching_task.cancel()
         self._watching_task = asyncio.create_task(self._watch_loop())
         if self._scan_loop_task is None or self._scan_loop_task.done():
-            self._scan_loop_task = asyncio.create_task(self._scan_loop())
+            self._scan_loop_task = asyncio.create_task(self._scan_loop())        # refresh the games seed in the background, it must not delay the startup
+        asyncio.create_task(self._update_games_seed())
         # Add default topics
         self.websocket.add_topics([
             WebsocketTopic("User", "Drops", auth_state.user_id, self.process_drops),
@@ -1738,6 +1741,77 @@ class Twitch:
         seed_state = catalogue_data.get("seed")
         return seed_state if isinstance(seed_state, dict) else {}
 
+    def _load_games_seed(self) -> JsonType | None:
+        """
+        The newest games seed available: the refreshed copy wins over the bundled one.
+        """
+        best: JsonType | None = None
+        for path in (GAMES_SEED_PATH, GAMES_SEED_CACHE_PATH):
+            try:
+                with open(path, encoding="utf8") as seed_file:
+                    seed: JsonType = json.load(seed_file)
+            except (OSError, ValueError):
+                continue
+            if not isinstance(seed, dict) or not isinstance(seed.get("games"), list):
+                continue
+            if best is None or str(seed.get("generated") or "") > str(best.get("generated") or ""):
+                best = seed
+        return best
+
+    async def _update_games_seed(self) -> None:
+        """
+        Refreshes the games seed from the fork's repository, at most every N hours.
+
+        Twitch doesn't list the games that carry drops, so the seed is what a new installation
+        starts from and it has to keep up with the campaigns: the file in the repository is
+        updated by the maintainer, and this only fetches it. Without network the bundled copy
+        stays in use, silently - the app has to start and work regardless.
+        """
+        if not self.settings.seed_auto_update:
+            return
+        try:
+            if GAMES_SEED_CACHE_PATH.exists():
+                age: float = time() - GAMES_SEED_CACHE_PATH.stat().st_mtime
+                if age < int(self.settings.seed_update_hours) * 3600:
+                    return
+        except OSError:
+            pass
+        try:
+            session = await self.get_session()
+            async with session.get(GAMES_SEED_URL) as response:
+                if response.status != 200:
+                    logger.log(CALL, f"Drop scan: games seed refresh answered {response.status}")
+                    return
+                fetched: JsonType = await response.json(content_type=None)
+        except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as exc:
+            logger.log(CALL, f"Drop scan: games seed refresh skipped: {exc}")
+            return
+        games = fetched.get("games") if isinstance(fetched, dict) else None
+        if not isinstance(games, list) or not games:
+            return
+        current = self._load_games_seed()
+        if current is not None and str(fetched.get("generated") or "") <= str(
+            current.get("generated") or ""
+        ):
+            # same file: touch the cache so the next check is another N hours away
+            try:
+                GAMES_SEED_CACHE_PATH.touch(exist_ok=True)
+            except OSError:
+                pass
+            return
+        try:
+            temporary = GAMES_SEED_CACHE_PATH.with_suffix(".tmp")
+            with open(temporary, "w", encoding="utf8") as cache_file:
+                json.dump(fetched, cache_file, ensure_ascii=False)
+            temporary.replace(GAMES_SEED_CACHE_PATH)
+        except OSError as exc:
+            logger.log(CALL, f"Drop scan: unable to store the refreshed games seed: {exc}")
+            return
+        logger.info(
+            f"Drop scan: games seed refreshed from the repository, {len(games)} game(s), "
+            f"{fetched.get('generated') or 'no date'}"
+        )
+
     def _apply_games_seed(
         self, catalogue: dict[str, JsonType], seed_state: JsonType
     ) -> JsonType:
@@ -1748,10 +1822,8 @@ class Twitch:
         drops games is what makes a fresh install useful straight away: the slice rotation
         probes them, and the category search only has to cover what the list doesn't know.
         """
-        try:
-            with open(GAMES_SEED_PATH, encoding="utf8") as seed_file:
-                seed: JsonType = json.load(seed_file)
-        except (OSError, ValueError):
+        seed = self._load_games_seed()
+        if seed is None:
             return seed_state
         stamp: str = str(seed.get("generated") or "")
         if not stamp or stamp == str(seed_state.get("games_seed") or ""):

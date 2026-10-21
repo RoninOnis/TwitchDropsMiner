@@ -111,6 +111,10 @@ GAMES_CATALOGUE_PATH = Path(WORKING_DIR, "games_catalogue.json")
 # Games shipped with the app: every title a drops campaign has ever been seen for. The scan
 # has no way to ask Twitch which games carry drops, so it starts from this list and grows it.
 GAMES_SEED_PATH = _resource_path("games_seed.json")
+# The seed is refreshed from the fork's repository, so the game list can be updated without a
+# new build: the bundled copy is only the fallback for a first start or a machine without network
+GAMES_SEED_URL = "https://raw.githubusercontent.com/RoninOnis/TwitchDropsMiner/master/games_seed.json"
+GAMES_SEED_CACHE_PATH = Path(WORKING_DIR, "games_seed.downloaded.json")
 # Drop scan refresh interval, in minutes, as offered in the settings
 SCAN_INTERVAL_CHOICES: tuple[int, ...] = (5, 10, 30, 60)
 DEFAULT_SCAN_INTERVAL_MINUTES: int = 30

@@ -48,6 +48,8 @@ class SettingsFile(TypedDict):
     scan_seed_requests: int
     scan_bootstrap_slice: int
     scan_bootstrap_seed_requests: int
+    seed_auto_update: bool
+    seed_update_hours: int
     channel_campaigns: str
     channel_campaigns_limit: int
     auto_add_scanned_games: bool
@@ -82,6 +84,9 @@ default_settings: SettingsFile = {
     # used instead of the two above while the games catalogue is still being filled
     "scan_bootstrap_slice": SCAN_BOOTSTRAP_SLICE,
     "scan_bootstrap_seed_requests": SCAN_BOOTSTRAP_SEED_REQUESTS,
+    # the games seed is refreshed from the repository, this is how often at most
+    "seed_auto_update": True,
+    "seed_update_hours": 24,
     # "off" | "relevant" (channels of the games in the priority list and of the games
     # already being mined) | "all" (every watch-based channel campaign found)
     # NOTE: off by default - every channel campaign seen so far is a subscriber reward
@@ -125,6 +130,8 @@ class Settings:
     scan_seed_requests: int
     scan_bootstrap_slice: int
     scan_bootstrap_seed_requests: int
+    seed_auto_update: bool
+    seed_update_hours: int
     channel_campaigns: str
     channel_campaigns_limit: int
     auto_add_scanned_games: bool
