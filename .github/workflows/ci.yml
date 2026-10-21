@@ -374,6 +374,18 @@ jobs:
               drop's own minutes instead of mixing them with the campaign's drop count.
             - **A "Linked" filter in the inventory**, next to "Not linked": only campaigns whose
               game account is connected.
+            - **The channel list tells two things apart.** "Drops" is what Twitch reports for the
+              channel - the badge the drops page shows - and "Farm" is whether this account still
+              has something to collect there. Twitch keeps a campaign listed on a channel until it
+              ends, even when everything in it has been collected, so the old single mark claimed
+              "no drops" on channels that do have them.
+            - **The "Switch" button works on such channels.** It asked the same question, so a
+              channel picked by hand was silently ignored; now a channel Twitch still lists a
+              campaign for is accepted. Every channel on the list is re-checked, not only the games
+              being farmed.
+            - **The chosen look survives a restart.** The palette was only restored from the
+              dark-mode checkbox, so every launch came back classic, and picking one never reached
+              `settings.json` at all.
             - **The scan no longer edits your priority list.** It used to be able to append every
               game it found to it; that option and the setting behind it are gone.
             - **Five looks to pick from** in Settings: classic light, classic dark, graphite, light
@@ -424,6 +436,17 @@ jobs:
               «3.3%, 1/30 мин», а в заголовке трея минуты самого дропа, а не число дропов кампании.
             - **Фильтр «Связанные» в инвентаре**, рядом с «Не связано»: только кампании с
               привязанным игровым аккаунтом.
+            - **В списке каналов два разных признака.** «Дропы» — то, что Twitch отдаёт по каналу
+              (тот самый бейдж со страницы дропов), «Фарм» — осталось ли что-то забрать именно вам.
+              Twitch держит кампанию на канале до её конца, даже когда всё в ней уже собрано, из-за
+              чего старая единственная галочка показывала «дропов нет» на каналах, где они есть.
+            - **Кнопка «Изменить» работает на таких каналах.** Она спрашивала то же самое, поэтому
+              выбранный руками канал молча игнорировался; теперь канал, на котором Twitch всё ещё
+              показывает кампанию, принимается. Пересчитываются все каналы списка, а не только игры
+              из списка фарма.
+            - **Выбранное оформление переживает перезапуск.** Палитра восстанавливалась только из
+              галочки тёмной темы, поэтому каждый запуск возвращался к классической, а выбор в
+              настройках вообще не попадал в `settings.json`.
             - **Скан больше не правит ваш список приоритетов.** Раньше он мог дописывать в него
               каждую найденную игру; эта галочка и настройка под ней убраны.
             - **Пять вариантов оформления** в настройках: классическая светлая, классическая тёмная,
