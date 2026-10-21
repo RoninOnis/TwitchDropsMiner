@@ -5,6 +5,7 @@ import gzip
 import json
 import asyncio
 import logging
+from datetime import datetime, timezone
 from base64 import b64encode
 from functools import cached_property
 from typing import Any, SupportsInt, cast, TYPE_CHECKING
@@ -38,6 +39,10 @@ class Stream:
         self.channel: Channel = channel
         self.broadcast_id = int(id)
         self.viewers: int = viewers
+        # Twitch reports a live campaign for this channel (what the site's Drops badge shows);
+        # unknown until asked, and assumed present when the check is turned off
+        self.drops_reported: bool = not channel._twitch.settings.available_drops_check
+        # ... and one of those campaigns still has something left for this account
         self.drops_enabled: bool = not channel._twitch.settings.available_drops_check
         self.game: Game | None = Game(game) if game else None
         self.title: str = title
@@ -288,8 +293,16 @@ class Channel:
 
     @property
     def drops_enabled(self) -> bool:
+        """There's still something this account can earn on this channel."""
         if self._stream is not None:
             return self._stream.drops_enabled
+        return False
+
+    @property
+    def drops_reported(self) -> bool:
+        """Twitch says the channel carries a live drops campaign, collected or not."""
+        if self._stream is not None:
+            return self._stream.drops_reported
         return False
 
     def display(self, *, add: bool = False):
@@ -334,6 +347,27 @@ class Channel:
             for campaign_data in available_drops
         )
 
+    @staticmethod
+    def _campaign_still_running(campaign_data: JsonType) -> bool:
+        """
+        Twitch keeps listing a campaign on a channel until it ends, even when everything in it
+        has already been collected - that's the badge the site still shows.
+        """
+        end_at = campaign_data.get("endAt")
+        if not isinstance(end_at, str):
+            return True
+        try:
+            ends_at = datetime.fromisoformat(end_at.replace("Z", "+00:00"))
+        except ValueError:
+            return True
+        return datetime.now(timezone.utc) < ends_at
+
+    def _apply_available_drops(self, stream: Stream, available_drops: list[JsonType]) -> None:
+        stream.drops_reported = any(
+            self._campaign_still_running(campaign_data) for campaign_data in available_drops
+        )
+        stream.drops_enabled = stream.drops_enabled or self._check_drops_enabled(available_drops)
+
     def update_available_drops(self, available_drops: list[JsonType]) -> None:
         """
         Sets the stream's drops status based on the channel's available drops.
@@ -342,6 +376,9 @@ class Channel:
         """
         if self._stream is not None:
             self._stream.drops_enabled = self._check_drops_enabled(available_drops)
+            self._stream.drops_reported = any(
+                self._campaign_still_running(campaign_data) for campaign_data in available_drops
+            )
 
     def external_update(self, channel_data: JsonType, available_drops: list[JsonType]):
         """
@@ -353,8 +390,7 @@ class Channel:
             self._stream = None
             return
         stream = Stream.from_get_stream(self, channel_data)
-        if not stream.drops_enabled:
-            stream.drops_enabled = self._check_drops_enabled(available_drops)
+        self._apply_available_drops(stream, available_drops)
         self._stream = stream
 
     async def get_stream(self) -> Stream | None:
@@ -379,8 +415,9 @@ class Channel:
             except MinerException:
                 logger.log(CALL, f"AvailableDrops GQL call failed for channel: {self._login}")
             else:
-                stream.drops_enabled = self._check_drops_enabled(
-                    available_drops_campaigns["data"]["channel"]["viewerDropCampaigns"] or []
+                self._apply_available_drops(
+                    stream,
+                    available_drops_campaigns["data"]["channel"]["viewerDropCampaigns"] or [],
                 )
         return stream
 

@@ -1002,7 +1002,7 @@ class Twitch:
                 # or select a new channel that meets the required conditions
                 new_watching = None
                 selected_channel = self.gui.channels.get_selection()
-                if selected_channel is not None and self.can_watch(selected_channel):
+                if selected_channel is not None and self.can_watch(selected_channel, manual=True):
                     # selected channel is checked first, and set as long as we can watch it
                     new_watching = selected_channel
                 else:
@@ -1145,24 +1145,30 @@ class Twitch:
         logger.log(CALL, "Maintenance task requests a reload")
         self.change_state(State.INVENTORY_FETCH)
 
-    def can_watch(self, channel: Channel) -> bool:
+    def can_watch(self, channel: Channel, *, manual: bool = False) -> bool:
         """
         Determines if the given channel qualifies as a watching candidate.
+
+        With manual=True a channel picked by hand in the list is also accepted when Twitch
+        reports a live campaign for it, even if this account has nothing left to collect there.
         """
         # exit early if stream is offline
         if not channel.online:
             return False
         for campaign in self.inventory:
+            if not campaign.can_earn(channel):
+                continue
+            # the campaign does the "special games" check itself
+            if campaign.game.is_special():
+                return True
+            # a channel the user asks for by name only needs a campaign that Twitch still lists
+            if manual and channel.drops_reported:
+                return True
+            # otherwise limit watching to the games the user wants
             if (
-                campaign.can_earn(channel)  # let the campaign do the "special games" check
-                and (
-                    # limit watching to the games the user wants
-                    channel.game is not None
-                    and channel.drops_enabled
-                    and channel.game in self.wanted_games
-                    # let the campaign ignore all channel-related checks
-                    or campaign.game.is_special()
-                )
+                channel.game is not None
+                and channel.drops_enabled
+                and channel.game in self.wanted_games
             ):
                 return True
         return False
@@ -2907,7 +2913,9 @@ class Twitch:
         candidates: list[Channel] = [
             channel
             for channel in channels
-            if channel.online and channel.game in self.wanted_games
+            # every channel on the list, not only the games being farmed: both the badge and the
+            # manual switch depend on this answer
+            if channel.online and channel.game is not None
         ]
         if not candidates:
             return

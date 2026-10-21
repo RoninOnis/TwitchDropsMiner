@@ -968,7 +968,12 @@ class ChannelList:
             ],
         )
         self._add_column("game", _("gui", "channels", "headings", "game"), width=50)
-        self._add_column("drops", "🎁", width_template="✔")
+        # Twitch lists a live campaign on the channel - the badge the site shows
+        drops_heading = _("gui", "channels", "headings", "drops")
+        self._add_column("drops", drops_heading, width_template=[drops_heading, "✔"])
+        # something is left to collect there for this account
+        farm_heading = _("gui", "channels", "headings", "farm")
+        self._add_column("earn", farm_heading, width_template=[farm_heading, "✔"])
         self._add_column(
             "viewers", _("gui", "channels", "headings", "viewers"), width_template="1234567"
         )
@@ -1116,8 +1121,9 @@ class ChannelList:
             status = _("gui", "channels", "offline")
         # game
         game = str(channel.game or '')
-        # drops
-        drops = "✔" if channel.drops_enabled else "❌"
+        # drops - reported by Twitch, and earnable by this account
+        drops = "✔" if channel.drops_reported else "❌"
+        earn = "✔" if channel.drops_enabled else "❌"
         # viewers
         viewers = ''
         if channel.viewers is not None:
@@ -1125,6 +1131,7 @@ class ChannelList:
         if iid in self._channel_map:
             self._set(iid, "game", game)
             self._set(iid, "drops", drops)
+            self._set(iid, "earn", earn)
             self._set(iid, "status", status)
             self._set(iid, "viewers", viewers)
             self._set(iid, "acl_base", acl_based)
@@ -1135,6 +1142,7 @@ class ChannelList:
                 {
                     "game": game,
                     "drops": drops,
+                    "earn": earn,
                     "status": status,
                     "viewers": viewers,
                     "acl_base": acl_based,
@@ -2386,6 +2394,14 @@ class HelpTab:
         getstarted.grid(column=0, row=(irow := irow + 1), sticky="nsew", padx=2)
         ttk.Label(
             getstarted, text=_("gui", "help", "getting_started_text"), wraplength=self.WIDTH
+        ).grid(sticky="nsew")
+        # the two marks in the channel list
+        channel_drops = ttk.LabelFrame(
+            center_frame, padding=(4, 0, 4, 4), text=_("gui", "help", "channels")
+        )
+        channel_drops.grid(column=0, row=(irow := irow + 1), sticky="nsew", padx=2)
+        ttk.Label(
+            channel_drops, text=_("gui", "help", "channels_text"), wraplength=self.WIDTH
         ).grid(sticky="nsew")
 
         # Invalidate button

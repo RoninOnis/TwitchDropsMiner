@@ -112,6 +112,8 @@ class GUIChannelHeadings(TypedDict):
     channel: str
     status: str
     game: str
+    drops: str
+    farm: str
     viewers: str
 
 
@@ -215,6 +217,8 @@ class GUIHelpInvalidate(TypedDict):
 
 class GUIHelp(TypedDict):
     links: GUIHelpLinks
+    channels: str
+    channels_text: str
     how_it_works: str
     how_it_works_text: str
     getting_started: str
@@ -352,6 +356,8 @@ default_translation: Translation = {
                 "channel": "Channel",
                 "status": "Status",
                 "game": "Game",
+                "drops": "Drops",
+                "farm": "Farm",
                 "viewers": "Viewers",
             },
         },
@@ -483,6 +489,14 @@ default_translation: Translation = {
                 "7. Changing the contents of either of the lists, or changing "
                 "the \"Priority mode\", requires you to press on \"Reload\" "
                 "for the changes to take an effect."
+            ),
+            "channels": "Drops on a channel",
+            "channels_text": (
+                "The channel list has two separate marks: \"Drops\" - Twitch lists a campaign "
+                "on this channel (the badge the site shows), and \"Farm\" - there is something "
+                "left for you to collect there. A channel can carry a running campaign while you "
+                "have nothing left in it: \"Drops\" ✔, \"Farm\" ❌, and the channel can still be "
+                "picked with the \"Switch\" button."
             ),
             "invalidate": {
                 "button": "Invalidate",
