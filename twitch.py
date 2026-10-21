@@ -1810,11 +1810,19 @@ class Twitch:
         }
 
         # channels to ask about: live drops-enabled channels of every candidate game
+        # NOTE: Twitch reports a campaign only on some of the channels streaming a game
+        # (measured: 5 of 60 live channels on a busy game), so a game the user actually
+        # wants is probed much deeper than the rest of the catalogue
+        priority_names: set[str] = {name.casefold() for name in self.settings.priority}
+        priority_names.update(game.name.casefold() for game in self.wanted_games)
+        shallow_depth: int = max(1, int(self.settings.scan_channels_per_game))
+        deep_depth: int = max(shallow_depth, int(self.settings.scan_priority_channels))
         channels: dict[int, Channel] = {}
         channel_games: dict[int, Game] = {}
         for game in games.values():
+            depth: int = deep_depth if game.name.casefold() in priority_names else shallow_depth
             try:
-                game_channels = await self.get_live_streams(game, limit=10)
+                game_channels = await self.get_live_streams(game, limit=depth)
             except MinerException:
                 logger.log(CALL, f"Drop scan: no live drops-enabled channels for: {game.name}")
                 continue
@@ -1895,6 +1903,14 @@ class Twitch:
             )[: self.settings.channel_campaigns_limit]
             channel_campaigns = dict(ordered)
 
+        # A campaign Twitch failed to report this time round is not gone: the queries only
+        # see the channels that happen to be live right now. Keep every campaign the
+        # previous scans found for as long as it hasn't ended, so a single unlucky scan
+        # doesn't drop the drops (and their progress) out of the inventory.
+        carried = self._carry_over_campaigns(game_campaigns, channel_campaigns)
+        for campaign_data in carried:
+            games_with_drops.add(campaign_data["game"]["displayName"])
+
         catalogue = self._update_game_catalogue(catalogue, games.values(), games_with_drops)
         self.save_game_catalogue(catalogue)
         scan_data: JsonType = {
@@ -1928,6 +1944,47 @@ class Twitch:
                 self.settings.save()
                 logger.info(f"Drop scan: added {len(added)} game(s) to the priority list")
         return scan_data
+
+    def _carry_over_campaigns(
+        self, game_campaigns: dict[str, JsonType], channel_campaigns: dict[str, JsonType]
+    ) -> list[JsonType]:
+        """
+        Merges the campaigns the previous scan found into the fresh results.
+
+        Twitch answers the per-channel query, and a campaign is only reported by the few
+        channels it is assigned to - so whether a scan sees a campaign depends on which
+        channels are live at that moment. Without this the inventory loses campaigns (and
+        the watch progress made on them) whenever a scan draws blanks.
+
+        Campaigns that have ended are dropped, and so are the channel campaigns when the
+        user doesn't want them at all.
+        """
+        previous_data, _stale = self.load_scan_cache()
+        now = datetime.now(timezone.utc)
+        carried: list[JsonType] = []
+        sources: list[tuple[str, dict[str, JsonType]]] = [("campaigns", game_campaigns)]
+        if self.settings.channel_campaigns != "off":
+            sources.append(("channel_campaigns", channel_campaigns))
+        for scan_key, target in sources:
+            for campaign_id, campaign_data in (previous_data.get(scan_key) or {}).items():
+                if campaign_id in target or not isinstance(campaign_data, dict):
+                    continue
+                try:
+                    ends_at = timestamp(campaign_data["endAt"])
+                    campaign_data["game"]["displayName"]
+                except (KeyError, ValueError, TypeError):
+                    continue
+                if ends_at <= now:
+                    # the campaign is over, nothing to keep
+                    continue
+                target[campaign_id] = campaign_data
+                carried.append(campaign_data)
+        if carried:
+            logger.log(
+                CALL,
+                f"Drop scan: kept {len(carried)} campaign(s) the scan didn't see this time",
+            )
+        return carried
 
     def start_scan(self) -> None:
         """

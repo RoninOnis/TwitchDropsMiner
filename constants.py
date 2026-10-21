@@ -111,6 +111,13 @@ GAMES_CATALOGUE_PATH = Path(WORKING_DIR, "games_catalogue.json")
 # Drop scan refresh interval, in minutes, as offered in the settings
 SCAN_INTERVAL_CHOICES: tuple[int, ...] = (5, 10, 30, 60)
 DEFAULT_SCAN_INTERVAL_MINUTES: int = 30
+# How many live channels of a game the scan asks about. Twitch only reports a campaign
+# on some of the channels streaming it (measured: 5 out of 60 on a busy game), so a
+# shallow probe misses the campaign on most scans.
+SCAN_CHANNELS_PER_GAME: int = 10
+# ... games the user actually wants get a much deeper probe, since a missed campaign
+# there is the difference between mining the drops and not seeing them at all
+SCAN_PRIORITY_CHANNELS_PER_GAME: int = 50
 # Games that never had any drops are dropped from the catalogue after this many days
 CATALOGUE_KEEP_DAYS: int = 30
 SETTINGS_PATH = Path(WORKING_DIR, "settings.json")

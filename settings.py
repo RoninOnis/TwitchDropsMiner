@@ -11,6 +11,8 @@ from constants import (
     DEFAULT_LANG,
     DEFAULT_CLIENT_TYPE,
     DEFAULT_SCAN_INTERVAL_MINUTES,
+    SCAN_CHANNELS_PER_GAME,
+    SCAN_PRIORITY_CHANNELS_PER_GAME,
     SCAN_INTERVAL_CHOICES,
     PriorityMode,
 )
@@ -36,6 +38,8 @@ class SettingsFile(TypedDict):
     scan_drops: bool
     scan_interval_minutes: int
     scan_top_games: int
+    scan_channels_per_game: int
+    scan_priority_channels: int
     channel_campaigns: str
     channel_campaigns_limit: int
     auto_add_scanned_games: bool
@@ -59,6 +63,10 @@ default_settings: SettingsFile = {
     "scan_drops": True,
     "scan_interval_minutes": DEFAULT_SCAN_INTERVAL_MINUTES,
     "scan_top_games": 120,
+    # channels asked per game; Twitch reports a campaign on only a few of the channels
+    # streaming it, so the games being farmed get a deep probe and the rest a shallow one
+    "scan_channels_per_game": SCAN_CHANNELS_PER_GAME,
+    "scan_priority_channels": SCAN_PRIORITY_CHANNELS_PER_GAME,
     # "off" | "relevant" (channels of the games in the priority list and of the games
     # already being mined) | "all" (every watch-based channel campaign found)
     # NOTE: off by default - every channel campaign seen so far is a subscriber reward
@@ -96,6 +104,8 @@ class Settings:
     scan_drops: bool
     scan_interval_minutes: int
     scan_top_games: int
+    scan_channels_per_game: int
+    scan_priority_channels: int
     channel_campaigns: str
     channel_campaigns_limit: int
     auto_add_scanned_games: bool
