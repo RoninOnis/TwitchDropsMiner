@@ -56,14 +56,21 @@ def merge_campaigns(history: dict[str, dict], scan_data: dict | list | None) -> 
     return history
 
 
-def build_games(catalogue: dict[str, dict], previous_seed: dict | None) -> list[str]:
-    """The seed: games from the catalogue first, then whatever the previous seed knew."""
+def build_games(history: dict[str, dict], previous_seed: dict | None) -> list[str]:
+    """
+    The seed: every game a campaign was ever seen for, plus whatever the previous seed knew.
+
+    Games that were only probed and never showed a campaign do not belong here - the list is
+    "games that carry drops", not "games the scan happened to look at".
+    """
     names: dict[str, None] = {}
-    for name in catalogue:
-        names.setdefault(name, None)
+    for campaign in history.values():
+        name = campaign.get("game")
+        if isinstance(name, str) and name:
+            names.setdefault(name, None)
     previous = previous_seed.get("games") if isinstance(previous_seed, dict) else None
     for name in previous or []:
-        if isinstance(name, str):
+        if isinstance(name, str) and name:
             names.setdefault(name, None)
     return list(names)
 
@@ -76,9 +83,6 @@ def main() -> None:
     args = parser.parse_args()
 
     stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    catalogue_data = load_json(args.workdir / "games_catalogue.json") or {}
-    catalogue = catalogue_data.get("games") if isinstance(catalogue_data, dict) else {}
-    catalogue = catalogue if isinstance(catalogue, dict) else {}
     scan_data = load_json(args.workdir / "drops_scan.json")
 
     history = load_json(HISTORY_PATH) or {}
@@ -111,7 +115,7 @@ def main() -> None:
     )
 
     seed_path = args.out / "games_seed.json"
-    games = build_games(catalogue, load_json(seed_path))
+    games = build_games(history, load_json(seed_path))
     seed_path.write_text(
         json.dumps({"generated": stamp, "games": games}, ensure_ascii=False, indent=0),
         encoding="utf8",

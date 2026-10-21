@@ -1,0 +1,293 @@
+{
+"generated": "2026-10-21T11:17:19Z",
+"campaigns": [
+{
+"game": "Black Desert",
+"gameId": "386821",
+"name": "AOS Drops Day 3",
+"startAt": "2026-10-20T12:00:00Z",
+"endAt": "2026-10-21T11:59:59.999Z",
+"drops": 3,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Marbles on Stream",
+"gameId": "509511",
+"name": "MarbleFest - Oct'26-Day 2",
+"startAt": "2026-10-20T14:00:00Z",
+"endAt": "2026-10-21T13:59:59.999Z",
+"drops": 3,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "World of Tanks",
+"gameId": "27546",
+"name": "WoT A Thrill Store #4",
+"startAt": "2026-10-19T15:00:00Z",
+"endAt": "2026-10-21T14:59:59.999Z",
+"drops": 2,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Albion Online",
+"gameId": "417528",
+"name": "Dragonfire 8 - #3/7",
+"startAt": "2026-10-21T10:00:00Z",
+"endAt": "2026-10-22T09:29:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Tom Clancy's The Division 2",
+"gameId": "504463",
+"name": "TD2 S3 Red Moon Unleashed",
+"startAt": "2026-10-15T15:00:00Z",
+"endAt": "2026-10-22T14:59:59.999Z",
+"drops": 5,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "World of Warships",
+"gameId": "32502",
+"name": "Update 15.9 Drop: Week 2",
+"startAt": "2026-10-15T16:00:00Z",
+"endAt": "2026-10-22T15:59:59.999Z",
+"drops": 2,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Shakes and Fidget",
+"gameId": "510389",
+"name": "S&F Droplets",
+"startAt": "2026-10-16T14:00:00Z",
+"endAt": "2026-10-22T21:58:59.999Z",
+"drops": 7,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "EVE Online",
+"gameId": "13263",
+"name": "Crimson Harvest Drop 4",
+"startAt": "2026-10-19T11:30:00Z",
+"endAt": "2026-10-23T10:57:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Dark and Darker",
+"gameId": "2009321156",
+"name": "EA Season 11 Drops 2",
+"startAt": "2026-10-16T12:00:00Z",
+"endAt": "2026-10-23T11:58:59.999Z",
+"drops": 10,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "MARVEL Contest of Champions",
+"gameId": "461221",
+"name": "October Week 3",
+"startAt": "2026-10-16T17:00:00Z",
+"endAt": "2026-10-23T16:44:59.999Z",
+"drops": 6,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Special Events",
+"gameId": "509663",
+"name": "Pokémon Night Out Campaign",
+"startAt": "2026-10-16T17:00:00Z",
+"endAt": "2026-10-24T23:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "World of Warships",
+"gameId": "32502",
+"name": "15.9 KOTS XIX Regionals",
+"startAt": "2026-10-17T06:00:00Z",
+"endAt": "2026-10-25T23:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Dead by Daylight",
+"gameId": "491487",
+"name": "DbD October of Horror III",
+"startAt": "2026-10-19T04:00:00Z",
+"endAt": "2026-10-26T03:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "ACE COMBAT 8: WINGS OF THEVE",
+"gameId": "404069058",
+"name": "ACE COMBAT 8 Nugget",
+"startAt": "2026-09-28T22:00:00Z",
+"endAt": "2026-10-26T06:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "The Witcher 3: Wild Hunt",
+"gameId": "115977",
+"name": "The Witcher 3 Remaster",
+"startAt": "2026-09-29T10:00:00Z",
+"endAt": "2026-10-27T09:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "MARVEL SNAP",
+"gameId": "1743359147",
+"name": "Haunted Drops",
+"startAt": "2026-10-19T19:05:00Z",
+"endAt": "2026-10-27T18:59:59.999Z",
+"drops": 3,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Star Citizen",
+"gameId": "71375",
+"name": "RSI Discovery",
+"startAt": "2026-10-16T16:30:00Z",
+"endAt": "2026-10-27T19:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Street Fighter 6",
+"gameId": "55453844",
+"name": "Street Fighter 6",
+"startAt": "2026-10-01T20:00:00Z",
+"endAt": "2026-10-28T19:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "ELDEN RING",
+"gameId": "512953",
+"name": "Bloody Finger ELDEN RING",
+"startAt": "2026-10-01T07:00:00Z",
+"endAt": "2026-10-29T06:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Warhammer 40,000: Space Marine II",
+"gameId": "223869970",
+"name": "SM2 - 3rd Anniversary",
+"startAt": "2026-10-01T08:00:00Z",
+"endAt": "2026-10-29T07:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Alien: Isolation",
+"gameId": "458443",
+"name": "Alien: Isolation Horror",
+"startAt": "2026-10-01T09:00:00Z",
+"endAt": "2026-10-29T08:58:59.999Z",
+"drops": 2,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Warhammer 40,000: Space Marine II",
+"gameId": "223869970",
+"name": "The Anniversary Update II",
+"startAt": "2026-10-01T09:20:00Z",
+"endAt": "2026-10-29T08:59:59.999Z",
+"drops": 2,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Enshrouded",
+"gameId": "737987407",
+"name": "Enshrouded v1.0 Launch",
+"startAt": "2026-10-15T08:00:00Z",
+"endAt": "2026-10-29T22:58:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "World of Tanks",
+"gameId": "27546",
+"name": "Operative QuickyBaby",
+"startAt": "2026-10-15T15:00:00Z",
+"endAt": "2026-10-31T21:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Dragon's Dogma II",
+"gameId": "435870350",
+"name": "Dragon’s Dogma 2 - DA",
+"startAt": "2026-10-08T12:00:00Z",
+"endAt": "2026-10-31T22:58:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Castlevania: Belmont's Curse",
+"gameId": "1736572793",
+"name": "Belmont's Curse badge",
+"startAt": "2026-10-15T04:00:00Z",
+"endAt": "2026-11-02T03:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "World of Warcraft",
+"gameId": "18122",
+"name": "Cuddly Gold Grrgle",
+"startAt": "2026-10-13T17:00:00Z",
+"endAt": "2026-11-03T17:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Special Events",
+"gameId": "509663",
+"name": "1 Month of Apple TV",
+"startAt": "2026-10-20T19:00:00Z",
+"endAt": "2026-11-03T19:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "THE FINALS",
+"gameId": "1910103699",
+"name": "PRIME TIME",
+"startAt": "2026-10-20T13:30:00Z",
+"endAt": "2026-11-05T09:29:59.999Z",
+"drops": 3,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "Planet Zoo 2",
+"gameId": "1510789205",
+"name": "Launch Clothing Set",
+"startAt": "2026-10-13T12:00:00Z",
+"endAt": "2026-11-10T11:58:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "NBA 2K27",
+"gameId": "602040818",
+"name": "NBA 2K27 Season 2",
+"startAt": "2026-10-16T15:00:00Z",
+"endAt": "2026-11-13T14:59:59.999Z",
+"drops": 2,
+"seen": "2026-10-21T11:17:19Z"
+},
+{
+"game": "League of Legends",
+"gameId": "21779",
+"name": "Worlds 2026 Chat Badge",
+"startAt": "2026-10-14T19:00:00Z",
+"endAt": "2026-11-15T18:59:59.999Z",
+"drops": 1,
+"seen": "2026-10-21T11:17:19Z"
+}
+]
+}
