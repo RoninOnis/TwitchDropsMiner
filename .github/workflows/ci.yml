@@ -351,22 +351,33 @@ jobs:
 
             - Reference commit: `${{github.sha}}`
 
-            **What is new in 16.2** - the game list grows instead of starting from scratch:
+            **What is new in 16.2.2** - a fresh install no longer starts blind:
 
-            - **The drop scan remembers what it found.** Twitch lists no games with drops anymore,
-              so the scan used to guess from the popular games list and could never reach the niche
-              titles the drops usually sit on. Every game it has seen is now kept in
-              `games_catalogue.json` and checked again on the following scans, so the coverage grows
-              with every scan. Games that never had drops and haven't been popular for 30 days are
-              forgotten, so the file does not grow without end.
-            - **Scan interval is a setting, in minutes:** 5, 10, 30 or 60, picked in the new "Drop
-              scan" settings section. An existing `settings.json` is migrated from the old hourly
-              value automatically. The scan is now scheduled by its own loop, so a short interval is
-              not tied to the inventory refresh anymore.
-            - **"Scan now" button**, plus a line showing when the last scan happened, how many games
-              with drops it found and how many games are in the catalogue.
-            - The "add found games to the priority list" option is a checkbox next to the scan
-              controls now, not a `settings.json` key.
+            - **The app ships a list of games that carry drops.** Twitch has no endpoint left that
+              lists them - even the website's campaigns page answers only to a real browser - so a
+              fresh installation used to see a handful of campaigns while Twitch was running about a
+              hundred. The build now bundles `games_seed.json` with 4908 games taken from
+              twitchdrops.app's campaign catalogue, campaigns running right now first. Everything the
+              Twitch drops page shows is in that list, including the niche titles.
+            - **The list is worked through in slices.** Probing a game costs a request, so a scan
+              checks a slice of the catalogue - 400 games while it is still being covered the first
+              time, then 150 - the games whose campaign ran in the last two weeks first, then the ones
+              checked longest ago. A full pass over the whole list takes about an hour at a 5 minute
+              interval. A scan is about two minutes once the list is covered.
+            - **A game that reports nothing is asked deeper.** Twitch reports a campaign through only
+              some of the channels streaming a game (5 of 60 on a busy one), so a game with live
+              drops-enabled channels that told us nothing is asked again with the wider channel probe.
+              On the same slice this found 14 campaigns where the shallow pass found 5.
+            - **Games on your priority list are probed 50 channels deep** instead of 10, and a campaign
+              a later scan misses is no longer dropped while it is still running, so its progress is
+              not lost.
+            - **The list is still grown by the scan itself:** a few pages of Twitch's category search
+              per scan add the games the seed does not know, for campaigns that start later.
+
+            New keys in `settings.json`: `scan_channels_per_game` (10), `scan_priority_channels` (50),
+            `scan_catalogue_slice` (150), `scan_seed_requests` (5), and the two used while the
+            catalogue is still being covered, `scan_bootstrap_slice` (400) and
+            `scan_bootstrap_seed_requests` (25).
 
             **Builds included:** Windows, macOS, Linux AppImage (x86_64, aarch64), Linux PyInstaller
             (x86_64, aarch64), with `SHA256SUMS.txt` covering all of them.
@@ -387,22 +398,33 @@ jobs:
 
             - Коммит-основа: `${{github.sha}}`
 
-            **Что нового в 16.2** — список игр накапливается, а не собирается заново:
+            **Что нового в 16.2.2** — чистая установка больше не начинает вслепую:
 
-            - **Скан дропов запоминает найденное.** Перечислить игры с дропами у Twitch больше
-              нечем, поэтому скан угадывал по списку популярных игр и никогда не доходил до нишевых
-              тайтлов, где дропы обычно и висят. Теперь каждая игра, которую он когда-либо видел,
-              хранится в `games_catalogue.json` и проверяется на следующих сканах: охват растёт с
-              каждым сканом. Игры без дропов и не бывшие популярными 30 дней забываются, чтобы файл
-              не рос бесконечно.
-            - **Интервал скана — настройка в минутах:** 5, 10, 30 или 60, выбирается в новом
-              разделе настроек «Скан дропов». Существующий `settings.json` миграциируется со
-              старого значения в часах автоматически. Скан теперь ведёт собственный цикл, поэтому
-              короткий интервал не привязан к обновлению инвентаря.
-            - **Кнопка «Сканировать сейчас»** и строка статуса: когда был последний скан, сколько
-              игр с дропами он нашёл и сколько игр в каталоге.
-            - Опция «добавлять найденные игры в приоритет» теперь чекбокс рядом с настройками
-              скана, а не ключ в `settings.json`.
+            - **В сборку зашит список игр с дропами.** Перечислить их у Twitch больше нечем — даже
+              страница кампаний на сайте отвечает только настоящему браузеру — поэтому свежая
+              установка видела несколько кампаний там, где у Twitch идёт около сотни. Теперь в сборке
+              лежит `games_seed.json` на 4908 игр из каталога кампаний twitchdrops.app, сначала те,
+              у кого кампании идут прямо сейчас. Всё, что показывает страница дропов Twitch, в этом
+              списке есть, включая нишевые тайтлы.
+            - **Список проходится порциями.** Проверка одной игры стоит запроса, поэтому за скан
+              берётся порция каталога — 400 игр, пока он не покрыт хотя бы раз, потом 150, и первыми
+              идут игры, у которых кампания была за последние две недели, затем те, что проверялись
+              давно. Полный проход по списку занимает около часа при интервале 5 минут; после этого
+              скан идёт примерно две минуты.
+            - **Игра, которая ничего не сообщила, опрашивается глубже.** Twitch отдаёт кампанию
+              только части каналов игры (5 из 60 у популярной), поэтому если у игры есть живые
+              drops-enabled каналы, а кампании они не показали, игра опрашивается шире. На той же
+              порции это дало 14 кампаний против 5 при поверхностном опросе.
+            - **Игры из вашего приоритетного списка опрашиваются на 50 каналов** вместо 10, а
+              кампания, которую следующий скан не увидел, больше не пропадает, пока она идёт — её
+              прогресс не теряется.
+            - **Список по-прежнему растёт сам:** несколько страниц поиска категорий Twitch за скан
+              добавляют игры, которых в сиде нет, — на случай кампаний, которые начнутся позже.
+
+            Новые ключи в `settings.json`: `scan_channels_per_game` (10), `scan_priority_channels`
+            (50), `scan_catalogue_slice` (150), `scan_seed_requests` (5) и два ключа для периода,
+            пока каталог ещё не покрыт, — `scan_bootstrap_slice` (400) и
+            `scan_bootstrap_seed_requests` (25).
 
             **В релизе:** Windows, macOS, Linux AppImage (x86_64, aarch64), Linux PyInstaller
             (x86_64, aarch64) и `SHA256SUMS.txt` с хэшами всех сборок.
