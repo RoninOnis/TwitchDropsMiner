@@ -1894,6 +1894,16 @@ class SettingsPanel:
             scan_frame, text=_("gui", "settings", "scan", "never")
         )
         self._scan_status.grid(column=1, row=srow, sticky="w")
+        # how much of the published game list has been checked for drops
+        ttk.Label(
+            scan_frame, text=_("gui", "settings", "scan", "coverage_label")
+        ).grid(column=0, row=(srow := srow + 1), sticky="e")
+        self._scan_coverage_bar = ttk.Progressbar(
+            scan_frame, mode="determinate", maximum=1, length=180, value=0
+        )
+        self._scan_coverage_bar.grid(column=1, row=srow, sticky="w")
+        self._scan_coverage = ttk.Label(scan_frame, text="")
+        self._scan_coverage.grid(column=0, row=(srow := srow + 1), columnspan=2, sticky="w")
 
         # Reload button
         reload_frame = ttk.Frame(center_frame)
@@ -1938,6 +1948,27 @@ class SettingsPanel:
             text += " " + _("gui", "settings", "scan", "stale")
         return text
 
+    def _refresh_scan_coverage(self) -> None:
+        try:
+            if not self._scan_coverage.winfo_exists():
+                return
+            coverage = self._manager._twitch.scan_coverage()
+        except (tk.TclError, AttributeError):
+            return
+        total: int = int(coverage.get("total") or 0)
+        probed: int = int(coverage.get("probed") or 0)
+        fraction: float = (probed / total) if total else 0.0
+        self._scan_coverage_bar.config(value=fraction)
+        self._scan_coverage.config(
+            text=_("gui", "settings", "scan", "coverage").format(
+                probed=probed,
+                total=total,
+                percent=f"{fraction:.0%}",
+                seed=coverage.get("seed") or 0,
+                campaigns=coverage.get("campaigns") or 0,
+            )
+        )
+
     def _refresh_scan_status(self) -> None:
         try:
             if not self._scan_status.winfo_exists():
@@ -1947,6 +1978,7 @@ class SettingsPanel:
             else:
                 text = self._scan_status_text()
             self._scan_status.config(text=text)
+            self._refresh_scan_coverage()
         except tk.TclError:
             # the panel is being torn down
             return

@@ -56,6 +56,9 @@ from constants import (
     GAMES_SEED_PATH,
     GAMES_SEED_URL,
     GAMES_SEED_CACHE_PATH,
+    CAMPAIGNS_URL,
+    CAMPAIGNS_CACHE_PATH,
+    CAMPAIGNS_LOOKAHEAD_DAYS,
     DUMP_PATH,
     COOKIES_PATH,
     CHANNEL_DROPS_GAME_ID,
@@ -745,8 +748,9 @@ class Twitch:
             self._watching_task.cancel()
         self._watching_task = asyncio.create_task(self._watch_loop())
         if self._scan_loop_task is None or self._scan_loop_task.done():
-            self._scan_loop_task = asyncio.create_task(self._scan_loop())        # refresh the games seed in the background, it must not delay the startup
+            self._scan_loop_task = asyncio.create_task(self._scan_loop())        # refresh the published feeds in the background, it must not delay the startup
         asyncio.create_task(self._update_games_seed())
+        asyncio.create_task(self._update_campaigns_feed())
         # Add default topics
         self.websocket.add_topics([
             WebsocketTopic("User", "Drops", auth_state.user_id, self.process_drops),
@@ -1758,6 +1762,69 @@ class Twitch:
                 best = seed
         return best
 
+    async def _load_json_feed(self, cache_path: Path) -> JsonType | None:
+        try:
+            with open(cache_path, encoding="utf8") as feed_file:
+                return json.load(feed_file)
+        except (OSError, ValueError):
+            return None
+
+    async def _refresh_json_feed(self, url: str, cache_path: Path, label: str) -> None:
+        """
+        Fetches a feed published by the maintainer, at most once per seed_update_hours.
+
+        Without network, a non-200 answer or a broken file the current feed stays in place and
+        nothing is reported in the GUI - the app has to work offline regardless.
+        """
+        if not self.settings.seed_auto_update:
+            return
+        try:
+            if cache_path.exists():
+                age: float = time() - cache_path.stat().st_mtime
+                if age < int(self.settings.seed_update_hours) * 3600:
+                    return
+        except OSError:
+            pass
+        try:
+            session = await self.get_session()
+            async with session.get(url) as response:
+                if response.status != 200:
+                    logger.log(CALL, f"Drop scan: {label} refresh answered {response.status}")
+                    return
+                fetched: JsonType = await response.json(content_type=None)
+        except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as exc:
+            logger.log(CALL, f"Drop scan: {label} refresh skipped: {exc}")
+            return
+        payload = None
+        if isinstance(fetched, dict):
+            for key in ("games", "campaigns"):
+                if isinstance(fetched.get(key), list):
+                    payload = fetched[key]
+                    break
+        if not payload:
+            return
+        current = await self._load_json_feed(cache_path)
+        if current is not None and str(fetched.get("generated") or "") <= str(
+            current.get("generated") or ""
+        ):
+            try:
+                cache_path.touch(exist_ok=True)
+            except OSError:
+                pass
+            return
+        try:
+            temporary = cache_path.with_suffix(".tmp")
+            with open(temporary, "w", encoding="utf8") as feed_file:
+                json.dump(fetched, feed_file, ensure_ascii=False)
+            temporary.replace(cache_path)
+        except OSError as exc:
+            logger.log(CALL, f"Drop scan: unable to store the refreshed {label}: {exc}")
+            return
+        logger.info(
+            f"Drop scan: {label} refreshed from the repository, {len(payload)} entries, "
+            f"{fetched.get('generated') or 'no date'}"
+        )
+
     async def _update_games_seed(self) -> None:
         """
         Refreshes the games seed from the fork's repository, at most every N hours.
@@ -1767,50 +1834,54 @@ class Twitch:
         updated by the maintainer, and this only fetches it. Without network the bundled copy
         stays in use, silently - the app has to start and work regardless.
         """
-        if not self.settings.seed_auto_update:
-            return
+        await self._refresh_json_feed(GAMES_SEED_URL, GAMES_SEED_CACHE_PATH, "games seed")
+
+    async def _update_campaigns_feed(self) -> None:
+        """
+        Refreshes the campaigns feed published by the maintainer.
+
+        The feed is what makes discovery cheap: a game whose campaign is running or about to
+        start is probed deep on the next scan, instead of waiting for the slice rotation of a
+        catalogue with thousands of games in it.
+        """
+        await self._refresh_json_feed(CAMPAIGNS_URL, CAMPAIGNS_CACHE_PATH, "campaigns feed")
+
+    def _feed_active_games(self) -> dict[str, str]:
+        """
+        Games from the campaigns feed whose campaign runs or starts soon.
+
+        Returns a mapping of the casefolded name to the name as written in the feed, so the
+        scan can both match games it already knows and probe a game only the feed talks about.
+        """
+        loaded: JsonType | None = None
         try:
-            if GAMES_SEED_CACHE_PATH.exists():
-                age: float = time() - GAMES_SEED_CACHE_PATH.stat().st_mtime
-                if age < int(self.settings.seed_update_hours) * 3600:
-                    return
-        except OSError:
-            pass
-        try:
-            session = await self.get_session()
-            async with session.get(GAMES_SEED_URL) as response:
-                if response.status != 200:
-                    logger.log(CALL, f"Drop scan: games seed refresh answered {response.status}")
-                    return
-                fetched: JsonType = await response.json(content_type=None)
-        except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as exc:
-            logger.log(CALL, f"Drop scan: games seed refresh skipped: {exc}")
-            return
-        games = fetched.get("games") if isinstance(fetched, dict) else None
-        if not isinstance(games, list) or not games:
-            return
-        current = self._load_games_seed()
-        if current is not None and str(fetched.get("generated") or "") <= str(
-            current.get("generated") or ""
-        ):
-            # same file: touch the cache so the next check is another N hours away
+            with open(CAMPAIGNS_CACHE_PATH, encoding="utf8") as feed_file:
+                loaded = json.load(feed_file)
+        except (OSError, ValueError):
+            return set()
+        campaigns = loaded.get("campaigns") if isinstance(loaded, dict) else None
+        if not isinstance(campaigns, list):
+            return set()
+        now = datetime.now(timezone.utc)
+        horizon = now + timedelta(days=CAMPAIGNS_LOOKAHEAD_DAYS)
+        names: dict[str, str] = {}
+        for entry in campaigns:
+            if not isinstance(entry, dict):
+                continue
+            game_name = entry.get("game")
+            if not isinstance(game_name, str) or not game_name:
+                continue
+            end_at = entry.get("endAt")
+            start_at = entry.get("startAt")
             try:
-                GAMES_SEED_CACHE_PATH.touch(exist_ok=True)
-            except OSError:
+                if end_at and timestamp(str(end_at)) < now:
+                    continue
+                if start_at and timestamp(str(start_at)) > horizon:
+                    continue
+            except ValueError:
                 pass
-            return
-        try:
-            temporary = GAMES_SEED_CACHE_PATH.with_suffix(".tmp")
-            with open(temporary, "w", encoding="utf8") as cache_file:
-                json.dump(fetched, cache_file, ensure_ascii=False)
-            temporary.replace(GAMES_SEED_CACHE_PATH)
-        except OSError as exc:
-            logger.log(CALL, f"Drop scan: unable to store the refreshed games seed: {exc}")
-            return
-        logger.info(
-            f"Drop scan: games seed refreshed from the repository, {len(games)} game(s), "
-            f"{fetched.get('generated') or 'no date'}"
-        )
+            names.setdefault(game_name.casefold(), game_name)
+        return names
 
     def _apply_games_seed(
         self, catalogue: dict[str, JsonType], seed_state: JsonType
@@ -1964,6 +2035,37 @@ class Twitch:
         task = getattr(self, "_scan_task", None)
         return task is not None and not task.done()
 
+    def scan_coverage(self) -> JsonType:
+        """
+        How much of the games catalogue has been checked for drops at least once.
+
+        The scan walks the catalogue in slices, so a fresh installation needs a while before
+        every known game has been looked at - this is what the GUI shows as a progress bar.
+        """
+        catalogue: dict[str, JsonType] = self.load_game_catalogue()
+        total: int = len(catalogue)
+        probed: int = sum(1 for entry in catalogue.values() if entry.get("last_scan"))
+        seed_games: int = sum(
+            1
+            for entry in catalogue.values()
+            if entry.get("source") == "seed" or entry.get("seeded")
+        )
+        scan_data, _stale, _known = self.scan_status()
+        campaigns: int = len((scan_data or {}).get("games_with_drops") or [])
+        last_scan: str = ""
+        if probed:
+            last_scan = max(
+                (str(entry.get("last_scan") or "") for entry in catalogue.values()), default=""
+            )
+        return {
+            "probed": probed,
+            "total": total,
+            "seed": seed_games,
+            "campaigns": campaigns,
+            "last_scan": last_scan,
+            "complete": probed >= total > 0,
+        }
+
     def scan_status(self) -> tuple[JsonType, bool, int]:
         """
         The last scan results, whether they are stale, and how many games are known.
@@ -2051,6 +2153,17 @@ class Twitch:
             if not campaign.game.is_channel_drops()
         )
         always_names.update(name.casefold() for name in popular_names)
+        # games with a campaign that is running or starts soon, as published by the maintainer:
+        # they are probed deep on every scan instead of waiting for the slice rotation
+        feed_games: dict[str, str] = self._feed_active_games()
+        feed_names: set[str] = set(feed_games)
+        if feed_games:
+            for feed_name in feed_games.values():
+                # a game only the feed knows about still has to be probed
+                games.setdefault(feed_name, Game({"id": 0, "name": feed_name}))
+            priority_names.update(feed_names)
+            always_names.update(feed_names)
+            logger.log(CALL, f"Drop scan: {len(feed_names)} game(s) taken from the campaigns feed")
         slice_size: int = max(0, int(self.settings.scan_catalogue_slice))
         if bootstrapping:
             slice_size = max(slice_size, int(self.settings.scan_bootstrap_slice))

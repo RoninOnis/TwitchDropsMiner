@@ -165,6 +165,8 @@
                 "never": "Ещё не сканировалось",
                 "running": "Идёт поиск дропов…",
                 "stale": "(устарело)",
+"coverage_label": "Проверено игр: ",
+                "coverage": "Проверено {probed} из {total} игр ({percent}) · из списка: {seed} · кампаний: {campaigns}",
                 "status": "Последний скан: {when} UTC · игр с дропами: {drops} · в каталоге: {total}"
             }
         },

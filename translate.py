@@ -408,6 +408,11 @@ default_translation: Translation = {
                     "Last scan: {when} UTC · games with drops: {drops} "
                     "· in the catalogue: {total}"
                 ),
+                "coverage_label": "Games checked: ",
+                "coverage": (
+                    "Checked {probed} of {total} games ({percent}) · from the published list: "
+                    "{seed} · campaigns: {campaigns}"
+                ),
             },
             "priority_modes": {
                 "priority_only": "Priority list only",
