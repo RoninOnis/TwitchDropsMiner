@@ -50,6 +50,10 @@ from constants import (
     GAMES_CATALOGUE_PATH,
     CATALOGUE_KEEP_DAYS,
     CATALOGUE_SEED_QUERIES,
+    SCAN_BOOTSTRAP_CATALOGUE,
+    SCAN_KNOWN_DROPPER_DAYS,
+    SCAN_ESCALATION_GAMES,
+    GAMES_SEED_PATH,
     DUMP_PATH,
     COOKIES_PATH,
     CHANNEL_DROPS_GAME_ID,
@@ -1734,6 +1738,52 @@ class Twitch:
         seed_state = catalogue_data.get("seed")
         return seed_state if isinstance(seed_state, dict) else {}
 
+    def _apply_games_seed(
+        self, catalogue: dict[str, JsonType], seed_state: JsonType
+    ) -> JsonType:
+        """
+        Adds the games shipped with the app to the catalogue, once per seed version.
+
+        Twitch doesn't expose the games that carry drops anywhere, so a bundle of known
+        drops games is what makes a fresh install useful straight away: the slice rotation
+        probes them, and the category search only has to cover what the list doesn't know.
+        """
+        try:
+            with open(GAMES_SEED_PATH, encoding="utf8") as seed_file:
+                seed: JsonType = json.load(seed_file)
+        except (OSError, ValueError):
+            return seed_state
+        stamp: str = str(seed.get("generated") or "")
+        if not stamp or stamp == str(seed_state.get("games_seed") or ""):
+            return seed_state
+        names = seed.get("games")
+        if not isinstance(names, list):
+            return seed_state
+        excluded: set[str] = {name.casefold() for name in self.settings.exclude}
+        known: set[str] = {name.casefold() for name in catalogue}
+        now = isonow()
+        added = 0
+        for game_name in names:
+            if not isinstance(game_name, str) or not game_name.strip():
+                continue
+            if game_name.casefold() in excluded or game_name.casefold() in known:
+                continue
+            catalogue[game_name] = {
+                "name": game_name,
+                "first_seen": now,
+                "seeded": now,
+                "source": "seed",
+                "scans": 0,
+                "drops_found": 0,
+            }
+            known.add(game_name.casefold())
+            added += 1
+        if added:
+            logger.info(f"Drop scan: {added} game(s) taken from the bundled seed list")
+        updated = dict(seed_state)
+        updated["games_seed"] = stamp
+        return updated
+
     async def _seed_game_catalogue(
         self,
         catalogue: dict[str, JsonType],
@@ -1754,6 +1804,7 @@ class Twitch:
         if not terms or requests_budget <= 0:
             return seeded, seed_state
         term_index = int(seed_state.get("term_index") or 0) % len(terms)
+        failures: int = 0
         for _ in range(requests_budget):
             term = terms[term_index]
             variables: JsonType = {
@@ -1766,8 +1817,15 @@ class Twitch:
             try:
                 response = await self.gql_request(operation)
             except MinerException as exc:
-                logger.warning(f"Drop scan: category search for {term!r} failed: {exc}")
-                break
+                # Twitch answers a "service error" now and then: skip that term, the next
+                # one is a different query anyway
+                logger.log(CALL, f"Drop scan: category search for {term!r} failed: {exc}")
+                failures += 1
+                term_index = (term_index + 1) % len(terms)
+                if failures >= 3:
+                    break
+                continue
+            failures = 0
             search_data: JsonType = (response.get("data") or {}).get("searchFor") or {}
             games_data: JsonType = search_data.get("games") or {}
             now = isonow()
@@ -1792,7 +1850,9 @@ class Twitch:
             term_index = (term_index + 1) % len(terms)
         if seeded:
             logger.log(CALL, f"Drop scan: {len(seeded)} new game(s) harvested from the search")
-        return seeded, {"term_index": term_index}
+        updated = dict(seed_state)
+        updated["term_index"] = term_index
+        return seeded, updated
 
     def _update_game_catalogue(
         self,
@@ -1877,10 +1937,18 @@ class Twitch:
         # games list alone never covers the niche titles the drops usually sit on
         catalogue: dict[str, JsonType] = self.load_game_catalogue()
         seed_state: JsonType = self.load_catalogue_seed_state()
-        # grow the catalogue from Twitch's category search, a few pages per scan
+        seed_state = self._apply_games_seed(catalogue, seed_state)
+        # While the catalogue is still small the scan spends more on growing and probing it:
+        # a fresh install otherwise needs days to reach the coverage an established one has.
+        unprobed: int = sum(1 for entry in catalogue.values() if not entry.get("last_scan"))
+        bootstrapping: bool = unprobed > 0 or len(catalogue) < SCAN_BOOTSTRAP_CATALOGUE
+        seed_budget: int = int(self.settings.scan_seed_requests)
+        if bootstrapping:
+            seed_budget = max(seed_budget, int(self.settings.scan_bootstrap_seed_requests))
+        # grow the catalogue from Twitch's category search
         try:
             _seeded, seed_state = await self._seed_game_catalogue(
-                catalogue, seed_state, int(self.settings.scan_seed_requests)
+                catalogue, seed_state, seed_budget
             )
         except Exception as exc:  # noqa: BLE001 - a failed harvest must not kill the scan
             logger.warning(f"Drop scan: unable to grow the games catalogue: {exc}")
@@ -1912,13 +1980,27 @@ class Twitch:
         )
         always_names.update(name.casefold() for name in popular_names)
         slice_size: int = max(0, int(self.settings.scan_catalogue_slice))
+        if bootstrapping:
+            slice_size = max(slice_size, int(self.settings.scan_bootstrap_slice))
+        known_dropper_after: str = isonow()[:10]  # ISO date, compared lexicographically
+        recently_had_drops: str = (
+            datetime.now(timezone.utc) - timedelta(days=SCAN_KNOWN_DROPPER_DAYS)
+        ).strftime("%Y-%m-%d")
+
+        def rotation_key(item: tuple[str, JsonType]) -> tuple[int, str]:
+            entry = item[1]
+            last_drop = str(entry.get("last_drop") or "")
+            # a game that ran a campaign recently is worth checking first, every cycle
+            weight = 0 if last_drop and last_drop[:10] >= recently_had_drops else 1
+            return weight, str(entry.get("last_scan") or "")
+
         rotating = sorted(
             (
                 (name, entry)
                 for name, entry in catalogue.items()
                 if name.casefold() not in always_names and name in games
             ),
-            key=lambda item: str(item[1].get("last_scan") or ""),
+            key=rotation_key,
         )
         probed_slice = {name for name, _entry in rotating[:slice_size]}
         skipped = len(rotating) - len(probed_slice)
@@ -1962,42 +2044,87 @@ class Twitch:
             logger.warning("Drop scan: no live drops-enabled channels found at all")
             return {}
 
-        # ask every channel what drops are available on it
-        available_drops_ops: list[GQLOperation] = [
-            GQL_QUERIES["AvailableDrops"].with_variables({"channelID": str(channel_id)})
-            for channel_id in channels
-        ]
         game_campaigns: dict[str, JsonType] = {}
         raw_channel_campaigns: dict[str, JsonType] = {}
         channel_campaigns: dict[str, JsonType] = {}
         games_with_drops: set[str] = set()
-        for available_drops_chunk in chunk(available_drops_ops, 20):
-            try:
-                response_list: list[JsonType] = await self.gql_request(available_drops_chunk)
-            except MinerException as exc:
-                logger.warning(f"Drop scan: available drops batch failed: {exc}")
-                continue
-            for response_json in response_list:
-                channel_info: JsonType | None = response_json["data"]["channel"]
-                if channel_info is None:
+        asked: set[int] = set()
+
+        async def ask_channels(to_ask: dict[int, Channel]) -> None:
+            """Asks the channels what campaigns they carry and merges the results."""
+            if not to_ask:
+                return
+            asked.update(to_ask)
+            available_drops_ops: list[GQLOperation] = [
+                GQL_QUERIES["AvailableDrops"].with_variables({"channelID": str(channel_id)})
+                for channel_id in to_ask
+            ]
+            for available_drops_chunk in chunk(available_drops_ops, 20):
+                try:
+                    response_list: list[JsonType] = await self.gql_request(available_drops_chunk)
+                except MinerException as exc:
+                    logger.warning(f"Drop scan: available drops batch failed: {exc}")
                     continue
-                channel = channels[int(channel_info["id"])]
-                channel_game: Game | None = channel_games.get(channel.id)
-                for campaign_data in channel_info["viewerDropCampaigns"] or []:
-                    if campaign_data.get("game") is not None:
-                        if campaign_data["id"] in game_campaigns:
-                            continue
-                        if not campaign_data.get("timeBasedDrops"):
-                            continue
-                        built = self._build_game_campaign(campaign_data)
-                        if built is not None:
-                            game_campaigns[campaign_data["id"]] = built
-                            games_with_drops.add(built["game"]["displayName"])
+                for response_json in response_list:
+                    channel_info: JsonType | None = response_json["data"]["channel"]
+                    if channel_info is None:
                         continue
-                    # a campaign offered by this channel itself (a badge, an emote, ...)
-                    raw_channel_campaigns.setdefault(
-                        campaign_data["id"], {"data": campaign_data, "channel": channel}
-                    )
+                    channel = to_ask[int(channel_info["id"])]
+                    for campaign_data in channel_info["viewerDropCampaigns"] or []:
+                        if campaign_data.get("game") is not None:
+                            if campaign_data["id"] in game_campaigns:
+                                continue
+                            if not campaign_data.get("timeBasedDrops"):
+                                continue
+                            built = self._build_game_campaign(campaign_data)
+                            if built is not None:
+                                game_campaigns[campaign_data["id"]] = built
+                                games_with_drops.add(built["game"]["displayName"])
+                            continue
+                        # a campaign offered by this channel itself (a badge, an emote, ...)
+                        raw_channel_campaigns.setdefault(
+                            campaign_data["id"], {"data": campaign_data, "channel": channel}
+                        )
+
+        await ask_channels(channels)
+
+        # Twitch reports a campaign only on some of the channels streaming it (measured: 5 of
+        # 60 on a busy game), so a game with live drops-enabled channels that told us nothing
+        # gets asked again, deeper. Doing it here rather than up front keeps the depth
+        # affordable: only the games that actually have drops-enabled streams pay for it.
+        games_with_campaign: set[str] = {
+            campaign["game"]["displayName"] for campaign in game_campaigns.values()
+        }
+        shallow_games: dict[str, Game] = {}
+        for channel_id, channel_game in channel_games.items():
+            if channel_id not in asked:
+                continue
+            if channel_game.name.casefold() in priority_names:
+                # already probed deep in the first pass
+                continue
+            if channel_game.name in games_with_campaign:
+                continue
+            shallow_games.setdefault(channel_game.name, channel_game)
+        escalated = 0
+        for channel_game in list(shallow_games.values())[:SCAN_ESCALATION_GAMES]:
+            try:
+                deeper = await self.get_live_streams(channel_game, limit=deep_depth)
+            except MinerException:
+                continue
+            extra: dict[int, Channel] = {
+                channel.id: channel for channel in deeper if channel.id not in asked
+            }
+            if not extra:
+                continue
+            for channel_id in extra:
+                channel_games.setdefault(channel_id, channel_game)
+            await ask_channels(extra)
+            escalated += 1
+        if escalated:
+            logger.log(
+                CALL,
+                f"Drop scan: {escalated} game(s) asked deeper, their channels reported nothing",
+            )
         for campaign_id, entry in raw_channel_campaigns.items():
             campaign_data: JsonType = entry["data"]
             channel: Channel = entry["channel"]

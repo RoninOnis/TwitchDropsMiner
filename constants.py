@@ -108,6 +108,9 @@ CACHE_DB = Path(CACHE_PATH, "mapping.json")
 COOKIES_PATH = Path(WORKING_DIR, "cookies.jar")
 SCAN_PATH = Path(WORKING_DIR, "drops_scan.json")
 GAMES_CATALOGUE_PATH = Path(WORKING_DIR, "games_catalogue.json")
+# Games shipped with the app: every title a drops campaign has ever been seen for. The scan
+# has no way to ask Twitch which games carry drops, so it starts from this list and grows it.
+GAMES_SEED_PATH = _resource_path("games_seed.json")
 # Drop scan refresh interval, in minutes, as offered in the settings
 SCAN_INTERVAL_CHOICES: tuple[int, ...] = (5, 10, 30, 60)
 DEFAULT_SCAN_INTERVAL_MINUTES: int = 30
@@ -119,8 +122,18 @@ SCAN_CHANNELS_PER_GAME: int = 10
 # there is the difference between mining the drops and not seeing them at all
 SCAN_PRIORITY_CHANNELS_PER_GAME: int = 50
 # Games of the catalogue probed per scan, and category-search pages fetched per scan
-SCAN_CATALOGUE_SLICE: int = 80
+SCAN_CATALOGUE_SLICE: int = 150
 SCAN_SEED_REQUESTS: int = 5
+# Bootstrap: while the catalogue holds fewer games than this, every scan grows it and
+# probes it much harder, so a fresh install reaches usable coverage in minutes
+SCAN_BOOTSTRAP_CATALOGUE: int = 1500
+# A game that ran a campaign within this many days is probed before the long tail
+SCAN_KNOWN_DROPPER_DAYS: int = 14
+# Per scan, how many games that have live drops-enabled channels but reported no campaign
+# are asked again with the deeper channel probe
+SCAN_ESCALATION_GAMES: int = 60
+SCAN_BOOTSTRAP_SLICE: int = 400
+SCAN_BOOTSTRAP_SEED_REQUESTS: int = 25
 # Games that never had any drops are dropped from the catalogue after this many days
 CATALOGUE_KEEP_DAYS: int = 30
 # The catalogue is grown by asking Twitch's category search for these terms, a few pages
