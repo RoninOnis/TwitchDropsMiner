@@ -19,6 +19,9 @@ HERE = Path(__file__).resolve().parent
 
 
 async def scan(workdir: Path) -> None:
+    # the app derives its working directory from argv[0]: point it at the working directory,
+    # otherwise it looks for settings.json and lang/ next to this script
+    sys.argv[0] = str(workdir / "main.py")
     sys.path.insert(0, str(workdir))
     from settings import Settings  # noqa: PLC0415
     from translate import _  # noqa: PLC0415
