@@ -1692,7 +1692,12 @@ class SettingsPanel:
             "proxy": StringVar(master, str(self._settings.proxy)),
             "tray": IntVar(master, self._settings.autostart_tray),
             "dark_mode": IntVar(master, int(self._settings.dark_mode)),
-            "theme": StringVar(master, self.THEME_NAMES.get(self._settings.theme or "", "")),
+            "theme": StringVar(
+                master,
+                self.THEME_NAMES.get(
+                    self._settings.theme or ("dark" if self._settings.dark_mode else "classic"), ""
+                ),
+            ),
             "priority_mode": StringVar(master, self.PRIORITY_MODES[priority_mode]),
             "tray_notifications": IntVar(master, self._settings.tray_notifications),
             "enable_badges_emotes": IntVar(
@@ -2063,19 +2068,29 @@ class SettingsPanel:
             return
         self._scan_status.after(5000, self._refresh_scan_status)
 
+    def _select_theme(self, key: str) -> None:
+        """Switches the palette, keeps both controls in sync, and writes the choice to disk."""
+        self._settings.theme = key
+        self._vars["theme"].set(self.THEME_NAMES.get(key, ""))
+        # the dark-mode checkbox follows the palette instead of driving it,
+        # and the saved flag follows too, so the tray and title bar match on the next start
+        self._settings.dark_mode = bool(THEMES[key]["dark"])
+        self._vars["dark_mode"].set(int(self._settings.dark_mode))
+        self._manager.apply_theme(key)
+        self._settings.save(force=True)
+
     def change_theme(self, event: tk.Event[ttk.Combobox] | None = None) -> None:
         chosen: str = self._vars["theme"].get()
         for key, name in self.THEME_NAMES.items():
             if name == chosen:
-                self._settings.theme = key
-                self._manager.apply_theme(key)
-                # the dark-mode checkbox follows the palette instead of driving it
-                self._vars["dark_mode"].set(int(bool(THEMES[key]["dark"])))
+                self._select_theme(key)
                 return
 
     def update_dark_mode(self) -> None:
-        self._settings.dark_mode = bool(self._vars["dark_mode"].get())
-        self._manager.apply_theme(self._settings.dark_mode)
+        dark = bool(self._vars["dark_mode"].get())
+        self._settings.dark_mode = dark
+        # the checkbox picks between the two classic palettes
+        self._select_theme("dark" if dark else "classic")
 
     def _get_self_path(self) -> str:
         # NOTE: we need double quotes in case the path contains spaces
@@ -2534,7 +2549,10 @@ class GUIManager:
             self._orig_theme_name = self._style.theme_use()
         except Exception:
             self._orig_theme_name = ''
-        self.apply_theme(self._twitch.settings.dark_mode)
+        self.apply_theme(
+            self._twitch.settings.theme
+            or ("dark" if self._twitch.settings.dark_mode else "classic")
+        )
         # stay hidden in tray if needed, otherwise show the window when everything's ready
         if self._twitch.settings.tray and sys.platform != "darwin":
             # NOTE: this starts the tray icon thread
