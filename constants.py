@@ -118,8 +118,22 @@ SCAN_CHANNELS_PER_GAME: int = 10
 # ... games the user actually wants get a much deeper probe, since a missed campaign
 # there is the difference between mining the drops and not seeing them at all
 SCAN_PRIORITY_CHANNELS_PER_GAME: int = 50
+# Games of the catalogue probed per scan, and category-search pages fetched per scan
+SCAN_CATALOGUE_SLICE: int = 80
+SCAN_SEED_REQUESTS: int = 5
 # Games that never had any drops are dropped from the catalogue after this many days
 CATALOGUE_KEEP_DAYS: int = 30
+# The catalogue is grown by asking Twitch's category search for these terms, a few pages
+# per scan: nothing on Twitch lists the games that carry drops, and the popular games list
+# never reaches the niche titles.
+# NOTE: the search returns 10 games per query and ignores both cursor and limit, so the
+# terms have to differ for the harvest to bring in anything new - two-letter combinations
+# yield almost no duplicates, while the first pages of a single letter are the popular
+# games the scan already knows about.
+_ALNUM: str = "abcdefghijklmnopqrstuvwxyz0123456789"
+CATALOGUE_SEED_QUERIES: tuple[str, ...] = tuple(
+    first + second for first in _ALNUM for second in _ALNUM
+) + tuple(_ALNUM)
 SETTINGS_PATH = Path(WORKING_DIR, "settings.json")
 # Pseudo-game carrying the drops that individual channels offer (badges, emotes, sub
 # rewards). Not a real Twitch game: it exists so these campaigns can reuse the normal
@@ -419,6 +433,18 @@ GQL_QUERIES: dict[str, GQLPersistedQuery] = {
         "782dad0f032942260171d2d80a654f88bdd0c5a9dddc392e9bc92218a0f42d20",
         variables={
             "channelID": ...,  # channel ID as a str
+        },
+    ),
+    # searches games by name, used to grow the scan's games catalogue
+    # NOTE: unlike the campaigns queries, this one is not behind an integrity check
+    "SearchCategories": GQLPersistedQuery(
+        "SearchResultsPage_SearchResults",
+        "075d5e21955b5be5580afaf7d4bf5a7b6392379d38a40995a86f0d5794ad3e01",
+        variables={
+            "platform": "web",
+            "query": ...,  # search term
+            "options": {"targets": None, "shouldSkipDiscoveryControl": False},
+            "requestID": ...,  # random UUID as a str
         },
     ),
     # retuns stream playback access token

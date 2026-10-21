@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 import asyncio
 import logging
 from time import time
@@ -48,6 +49,7 @@ from constants import (
     SCAN_PATH,
     GAMES_CATALOGUE_PATH,
     CATALOGUE_KEEP_DAYS,
+    CATALOGUE_SEED_QUERIES,
     DUMP_PATH,
     COOKIES_PATH,
     CHANNEL_DROPS_GAME_ID,
@@ -1701,17 +1703,96 @@ class Twitch:
             name: entry for name, entry in games.items() if isinstance(entry, dict)
         }
 
-    def save_game_catalogue(self, catalogue: dict[str, JsonType]) -> None:
+    def save_game_catalogue(
+        self,
+        catalogue: dict[str, JsonType],
+        seed_state: JsonType | None = None,
+    ) -> None:
+        data: JsonType = {"updated": isonow(), "games": catalogue}
+        if seed_state is not None:
+            data["seed"] = seed_state
+        else:
+            # keep whatever progress the catalogue search has made so far
+            previous = self.load_catalogue_seed_state()
+            if previous:
+                data["seed"] = previous
         try:
             with open(GAMES_CATALOGUE_PATH, "w", encoding="utf8") as catalogue_file:
-                json.dump(
-                    {"updated": isonow(), "games": catalogue},
-                    catalogue_file,
-                    ensure_ascii=False,
-                    indent=1,
-                )
+                json.dump(data, catalogue_file, ensure_ascii=False, indent=1)
         except OSError as exc:
             logger.warning(f"Drop scan: unable to save the games catalogue: {exc}")
+
+    def load_catalogue_seed_state(self) -> JsonType:
+        """
+        How far the search for new games got: which query it's on, and its page cursor.
+        """
+        try:
+            with open(GAMES_CATALOGUE_PATH, encoding="utf8") as catalogue_file:
+                catalogue_data: JsonType = json.load(catalogue_file)
+        except (OSError, ValueError):
+            return {}
+        seed_state = catalogue_data.get("seed")
+        return seed_state if isinstance(seed_state, dict) else {}
+
+    async def _seed_game_catalogue(
+        self,
+        catalogue: dict[str, JsonType],
+        seed_state: JsonType,
+        requests_budget: int,
+    ) -> tuple[list[Game], JsonType]:
+        """
+        Harvests games from Twitch's category search, a few pages per scan.
+
+        The popular games list never covers the niche titles, and nothing on Twitch lists
+        the games that carry drops, so the catalogue has to be grown from the search: it
+        answers without an integrity check and returns hundreds of matches per query.
+        The games land in the catalogue and get probed on later scans, as the probe slice
+        rotates through it.
+        """
+        seeded: list[Game] = []
+        terms: tuple[str, ...] = CATALOGUE_SEED_QUERIES
+        if not terms or requests_budget <= 0:
+            return seeded, seed_state
+        term_index = int(seed_state.get("term_index") or 0) % len(terms)
+        for _ in range(requests_budget):
+            term = terms[term_index]
+            variables: JsonType = {
+                "platform": "web",
+                "query": term,
+                "options": {"targets": None, "shouldSkipDiscoveryControl": False},
+                "requestID": str(uuid.uuid4()),
+            }
+            operation = GQL_QUERIES["SearchCategories"].with_variables(variables)
+            try:
+                response = await self.gql_request(operation)
+            except MinerException as exc:
+                logger.warning(f"Drop scan: category search for {term!r} failed: {exc}")
+                break
+            search_data: JsonType = (response.get("data") or {}).get("searchFor") or {}
+            games_data: JsonType = search_data.get("games") or {}
+            now = isonow()
+            for edge in games_data.get("edges") or []:
+                item: JsonType = edge.get("item") or {}
+                game_name: str | None = item.get("displayName") or item.get("name")
+                if not game_name or game_name in catalogue:
+                    continue
+                if game_name.casefold() in {name.casefold() for name in self.settings.exclude}:
+                    continue
+                catalogue[game_name] = {
+                    "name": game_name,
+                    "first_seen": now,
+                    "seeded": now,
+                    "scans": 0,
+                    "drops_found": 0,
+                    **({"id": int(item["id"])} if item.get("id") else {}),
+                }
+                seeded.append(Game({"id": int(item.get("id") or 0), "name": game_name}))
+            # the search ignores its own cursor (every page comes back identical), so the
+            # only way to see other games is to move on to the next query
+            term_index = (term_index + 1) % len(terms)
+        if seeded:
+            logger.log(CALL, f"Drop scan: {len(seeded)} new game(s) harvested from the search")
+        return seeded, {"term_index": term_index}
 
     def _update_game_catalogue(
         self,
@@ -1785,18 +1866,28 @@ class Twitch:
         each of those channels reports the campaigns available to this account.
         """
         games: dict[str, Game] = {}
+        popular_names: set[str] = set()
         try:
             for game in await self.helix_top_games(self.settings.scan_top_games):
                 games[game.name] = game
+                popular_names.add(game.name)
         except (MinerException, RequestException) as exc:
             logger.warning(f"Drop scan: unable to fetch the popular games list: {exc}")
         # every game the previous scans have found is a candidate again: the popular
         # games list alone never covers the niche titles the drops usually sit on
         catalogue: dict[str, JsonType] = self.load_game_catalogue()
+        seed_state: JsonType = self.load_catalogue_seed_state()
+        # grow the catalogue from Twitch's category search, a few pages per scan
+        try:
+            _seeded, seed_state = await self._seed_game_catalogue(
+                catalogue, seed_state, int(self.settings.scan_seed_requests)
+            )
+        except Exception as exc:  # noqa: BLE001 - a failed harvest must not kill the scan
+            logger.warning(f"Drop scan: unable to grow the games catalogue: {exc}")
         for game_name, game_entry in catalogue.items():
+            # keep the fuller Game objects the popular list gave us, they carry a real id
             games.setdefault(
-                game_name,
-                Game({"id": int(game_entry.get("id") or 0), "name": game_name}),
+                game_name, Game({"id": int(game_entry.get("id") or 0), "name": game_name})
             )
         # games of the campaigns we already know, and of the priority list, always count
         for campaign in self.inventory:
@@ -1808,13 +1899,44 @@ class Twitch:
         games = {
             name: game for name, game in games.items() if name.casefold() not in excluded_names
         }
+        # The catalogue keeps growing, while probing a game costs a request and the scan has
+        # to stay cheap: the games the growing catalogue adds are checked in slices, the
+        # ones probed longest ago first, so the whole list still gets covered over time.
+        priority_names: set[str] = {name.casefold() for name in self.settings.priority}
+        priority_names.update(game.name.casefold() for game in self.wanted_games)
+        always_names: set[str] = set(priority_names)
+        always_names.update(
+            campaign.game.name.casefold()
+            for campaign in self.inventory
+            if not campaign.game.is_channel_drops()
+        )
+        always_names.update(name.casefold() for name in popular_names)
+        slice_size: int = max(0, int(self.settings.scan_catalogue_slice))
+        rotating = sorted(
+            (
+                (name, entry)
+                for name, entry in catalogue.items()
+                if name.casefold() not in always_names and name in games
+            ),
+            key=lambda item: str(item[1].get("last_scan") or ""),
+        )
+        probed_slice = {name for name, _entry in rotating[:slice_size]}
+        skipped = len(rotating) - len(probed_slice)
+        games = {
+            name: game
+            for name, game in games.items()
+            if name.casefold() in always_names or name in probed_slice
+        }
+        if skipped:
+            logger.log(
+                CALL,
+                f"Drop scan: {skipped} catalogue game(s) wait for their turn in a later slice",
+            )
 
         # channels to ask about: live drops-enabled channels of every candidate game
         # NOTE: Twitch reports a campaign only on some of the channels streaming a game
         # (measured: 5 of 60 live channels on a busy game), so a game the user actually
         # wants is probed much deeper than the rest of the catalogue
-        priority_names: set[str] = {name.casefold() for name in self.settings.priority}
-        priority_names.update(game.name.casefold() for game in self.wanted_games)
         shallow_depth: int = max(1, int(self.settings.scan_channels_per_game))
         deep_depth: int = max(shallow_depth, int(self.settings.scan_priority_channels))
         channels: dict[int, Channel] = {}
@@ -1912,7 +2034,7 @@ class Twitch:
             games_with_drops.add(campaign_data["game"]["displayName"])
 
         catalogue = self._update_game_catalogue(catalogue, games.values(), games_with_drops)
-        self.save_game_catalogue(catalogue)
+        self.save_game_catalogue(catalogue, seed_state)
         scan_data: JsonType = {
             "scanned_at": isonow(),
             "channels_asked": len(channels),

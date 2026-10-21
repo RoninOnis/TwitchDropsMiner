@@ -13,6 +13,8 @@ from constants import (
     DEFAULT_SCAN_INTERVAL_MINUTES,
     SCAN_CHANNELS_PER_GAME,
     SCAN_PRIORITY_CHANNELS_PER_GAME,
+    SCAN_CATALOGUE_SLICE,
+    SCAN_SEED_REQUESTS,
     SCAN_INTERVAL_CHOICES,
     PriorityMode,
 )
@@ -40,6 +42,8 @@ class SettingsFile(TypedDict):
     scan_top_games: int
     scan_channels_per_game: int
     scan_priority_channels: int
+    scan_catalogue_slice: int
+    scan_seed_requests: int
     channel_campaigns: str
     channel_campaigns_limit: int
     auto_add_scanned_games: bool
@@ -67,6 +71,10 @@ default_settings: SettingsFile = {
     # streaming it, so the games being farmed get a deep probe and the rest a shallow one
     "scan_channels_per_game": SCAN_CHANNELS_PER_GAME,
     "scan_priority_channels": SCAN_PRIORITY_CHANNELS_PER_GAME,
+    # the catalogue grows from the category search; per scan only this many of its games
+    # are probed (the ones checked longest ago first) and this many search pages fetched
+    "scan_catalogue_slice": SCAN_CATALOGUE_SLICE,
+    "scan_seed_requests": SCAN_SEED_REQUESTS,
     # "off" | "relevant" (channels of the games in the priority list and of the games
     # already being mined) | "all" (every watch-based channel campaign found)
     # NOTE: off by default - every channel campaign seen so far is a subscriber reward
@@ -106,6 +114,8 @@ class Settings:
     scan_top_games: int
     scan_channels_per_game: int
     scan_priority_channels: int
+    scan_catalogue_slice: int
+    scan_seed_requests: int
     channel_campaigns: str
     channel_campaigns_limit: int
     auto_add_scanned_games: bool
