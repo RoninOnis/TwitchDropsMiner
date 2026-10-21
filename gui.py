@@ -784,8 +784,14 @@ class CampaignProgress:
         vars_campaign["name"].set(campaign.name)
         vars_campaign["game"].set(campaign.game.name)
         vars_campaign["progress"].set(campaign.progress)
+        # both numbers, each in its own meaning: how many drops are collected, and how far
+        # the whole campaign is - an average of every drop in it
         vars_campaign["percentage"].set(
-            f"{campaign.progress:6.1%} ({campaign.claimed_drops}/{campaign.total_drops})"
+            _("gui", "progress", "campaign_percentage").format(
+                claimed=campaign.claimed_drops,
+                total=campaign.total_drops,
+                percent=f"{campaign.progress:.1%}",
+            )
         )
         if countdown:
             # restart our seconds update timer
@@ -1119,7 +1125,7 @@ class TrayIcon:
             f"{self.TITLE}\n",
             f"{campaign.game.name}\n",
             drop.rewards_text(),
-            f" {drop.progress:.1%} ({campaign.claimed_drops}/{campaign.total_drops})"
+            f" {drop.progress:.0%} ({drop.current_minutes}/{drop.required_minutes})"
         ]
         min_len: int = 30
         max_len: int = 127
@@ -1240,6 +1246,7 @@ class InventoryOverview:
         self._cache: ImageCache = manager._cache
         self._settings: Settings = manager._twitch.settings
         self._filters = {
+            "linked": IntVar(master, 0),
             "not_linked": IntVar(
                 master, self._settings.priority_mode is PriorityMode.PRIORITY_ONLY
             ),
@@ -1259,6 +1266,14 @@ class InventoryOverview:
             filter_frame, text=_("gui", "inventory", "filter", "show"), padding=(0, 0, 10, 0)
         ).grid(column=0, row=0)
         icolumn = 0
+        ttk.Checkbutton(
+            filter_frame, variable=self._filters["linked"]
+        ).grid(column=(icolumn := icolumn + 1), row=0)
+        ttk.Label(
+            filter_frame,
+            text=_("gui", "inventory", "filter", "linked"),
+            padding=(0, 0, LABEL_SPACING, 0),
+        ).grid(column=(icolumn := icolumn + 1), row=0)
         ttk.Checkbutton(
             filter_frame, variable=self._filters["not_linked"]
         ).grid(column=(icolumn := icolumn + 1), row=0)
@@ -1329,6 +1344,7 @@ class InventoryOverview:
     def _update_visibility(self, campaign: DropsCampaign):
         # True if the campaign is supposed to show, False makes it hidden.
         frame = self._campaigns[campaign]["frame"]
+        linked = bool(self._filters["linked"].get())
         not_linked = bool(self._filters["not_linked"].get())
         expired = bool(self._filters["expired"].get())
         excluded = bool(self._filters["excluded"].get())
@@ -1337,6 +1353,7 @@ class InventoryOverview:
         priority_only = self._settings.priority_mode is PriorityMode.PRIORITY_ONLY
         if (
             campaign.required_minutes > 0  # don't show sub-only campaigns
+            and (not linked or campaign.linked)  # the "linked" filter shows only connected games
             and (not_linked or campaign.eligible)
             and (campaign.active or upcoming and campaign.upcoming or expired and campaign.expired)
             and (
@@ -1513,6 +1530,7 @@ class InventoryOverview:
         elif drop.current_minutes or drop.can_earn():
             progress_text = _("gui", "inventory", "percent_progress").format(
                 percent=f"{drop.progress:3.1%}",
+                current=drop.current_minutes,
                 minutes=drop.required_minutes,
             )
             if drop.ends_at < drop.campaign.ends_at:

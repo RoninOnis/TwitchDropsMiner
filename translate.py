@@ -105,6 +105,7 @@ class GUIProgress(TypedDict):
     remaining: str
     drop_progress: str
     campaign_progress: str
+    campaign_percentage: str
 
 
 class GUIChannelHeadings(TypedDict):
@@ -126,6 +127,7 @@ class GUIChannels(TypedDict):
 class GUIInvFilter(TypedDict):
     name: str
     show: str
+    linked: str
     not_linked: str
     upcoming: str
     expired: str
@@ -329,6 +331,7 @@ default_translation: Translation = {
             "remaining": "{time} remaining",
             "drop_progress": "Progress:",
             "campaign_progress": "Progress:",
+            "campaign_percentage": "{claimed}/{total} · average {percent}",
         },
         "channels": {
             "name": "Channels",
@@ -347,6 +350,7 @@ default_translation: Translation = {
             "filter": {
                 "name": "Filter",
                 "show": "Show:",
+                "linked": "Linked",
                 "not_linked": "Not linked",
                 "upcoming": "Upcoming",
                 "expired": "Expired",
@@ -368,7 +372,7 @@ default_translation: Translation = {
             "allowed_channels": "Allowed Channels:",
             "all_channels": "All",
             "and_more": "and {amount} more...",
-            "percent_progress": "{percent} of {minutes} minutes",
+            "percent_progress": "{percent}, {current}/{minutes} min",
             "minutes_progress": "{minutes} minutes",
         },
         "settings": {

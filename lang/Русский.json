@@ -85,7 +85,8 @@
             "campaign": "Кампания:",
             "remaining": "{time} осталось",
             "drop_progress": "Прогресс:",
-            "campaign_progress": "Прогресс:"
+            "campaign_progress": "Прогресс:",
+                "campaign_percentage": "{claimed}/{total} · средний {percent}"
         },
         "channels": {
             "name": "Каналы",
@@ -104,6 +105,7 @@
             "filter": {
                 "name": "Фильтр",
                 "show": "Показать:",
+                "linked": "Связанные",
                 "not_linked": "Не связано",
                 "upcoming": "Будущие",
                 "expired": "Прошедшие",
@@ -125,7 +127,7 @@
             "allowed_channels": "Участвующие каналы:",
             "all_channels": "Все",
             "and_more": "и еще {amount}...",
-            "percent_progress": "{percent} от {minutes} минут",
+            "percent_progress": "{percent}, {current}/{minutes} мин",
             "minutes_progress": "{minutes} минут"
         },
         "settings": {
