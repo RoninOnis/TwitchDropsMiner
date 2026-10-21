@@ -45,6 +45,7 @@ from utils import (
 )
 from constants import (
     CALL,
+    _resource_path,
     MAX_INT,
     SCAN_PATH,
     GAMES_CATALOGUE_PATH,
@@ -1846,6 +1847,18 @@ class Twitch:
         """
         await self._refresh_json_feed(CAMPAIGNS_URL, CAMPAIGNS_CACHE_PATH, "campaigns feed")
 
+    def _load_campaigns_feed(self) -> JsonType | None:
+        """The freshest campaigns feed: the downloaded copy, else the one bundled with the app."""
+        for path in (CAMPAIGNS_CACHE_PATH, _resource_path("campaigns.json")):
+            try:
+                with open(path, encoding="utf8") as feed_file:
+                    feed: JsonType = json.load(feed_file)
+            except (OSError, ValueError):
+                continue
+            if isinstance(feed, dict) and isinstance(feed.get("campaigns"), list):
+                return feed
+        return None
+
     def _feed_active_games(self) -> dict[str, str]:
         """
         Games from the campaigns feed whose campaign runs or starts soon.
@@ -1853,12 +1866,9 @@ class Twitch:
         Returns a mapping of the casefolded name to the name as written in the feed, so the
         scan can both match games it already knows and probe a game only the feed talks about.
         """
-        loaded: JsonType | None = None
-        try:
-            with open(CAMPAIGNS_CACHE_PATH, encoding="utf8") as feed_file:
-                loaded = json.load(feed_file)
-        except (OSError, ValueError):
-            return set()
+        loaded: JsonType | None = self._load_campaigns_feed()
+        if loaded is None:
+            return {}
         campaigns = loaded.get("campaigns") if isinstance(loaded, dict) else None
         if not isinstance(campaigns, list):
             return set()
