@@ -86,7 +86,7 @@
             "remaining": "{time} осталось",
             "drop_progress": "Прогресс:",
             "campaign_progress": "Прогресс:",
-                "campaign_percentage": "{claimed}/{total} · средний {percent}"
+            "campaign_percentage": "{claimed}/{total} · средний {percent}"
         },
         "channels": {
             "name": "Каналы",
@@ -137,6 +137,7 @@
                 "tray": "Автозапуск свёрнутым: ",
                 "tray_notifications": "Всплывающие уведомления: ",
                 "dark_mode": "Тёмный режим: ",
+                "theme": "Оформление: ",
                 "priority_mode": "Режим приоритета: ",
                 "proxy": "Прокси (Требуется перезапуск):"
             },
@@ -165,9 +166,16 @@
                 "never": "Ещё не сканировалось",
                 "running": "Идёт поиск дропов…",
                 "stale": "(устарело)",
-"coverage_label": "Проверено игр: ",
+                "coverage_label": "Проверено игр: ",
                 "coverage": "Проверено {probed} из {total} игр ({percent}) · из списка: {seed} · кампаний: {campaigns}",
                 "status": "Последний скан: {when} UTC · игр с дропами: {drops} · в каталоге: {total}"
+            },
+            "themes": {
+                "classic": "Классическая светлая",
+                "dark": "Классическая тёмная",
+                "graphite": "Графит",
+                "light_accent": "Светлая с акцентами",
+                "compact": "Компактная контрастная"
             }
         },
         "help": {

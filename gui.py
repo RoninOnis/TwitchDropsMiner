@@ -635,6 +635,68 @@ class _ProgressVars(TypedDict):
     drop: _DropVars
 
 
+class ThemePalette(TypedDict):
+    name: str
+    dark: bool
+    bg: str
+    fg: str
+    sel_bg: str
+    sel_fg: str
+    link: str
+    surface: str
+    header: str
+    fieldbg: str
+    border: str
+    muted: str
+    accent: str
+    tab_fg: str
+    tab_pad: int
+    font_delta: int
+
+
+# "classic" and "dark" keep the look the app always had; the rest are the alternatives
+THEMES: dict[str, ThemePalette] = {
+    "classic": {
+        "name": "classic", "dark": False,
+        "bg": "#f0f0f0", "fg": "#000000", "sel_bg": "#cce5ff", "sel_fg": "#000000",
+        "link": "blue", "surface": "#ffffff", "header": "#eeeeee", "fieldbg": "#ffffff",
+        "border": "#cccccc", "muted": "#404040", "accent": "#0a84ff", "tab_fg": "#0a84ff",
+        "tab_pad": 4, "font_delta": 0,
+    },
+    "dark": {
+        "name": "dark", "dark": True,
+        "bg": "#1e1e1e", "fg": "#e6e6e6", "sel_bg": "#094771", "sel_fg": "#ffffff",
+        "link": "#4ea3ff", "surface": "#252525", "header": "#2a2a2a", "fieldbg": "#2b2b2b",
+        "border": "#3c3c3c", "muted": "#b3b3b3", "accent": "#0d99ff", "tab_fg": "#0d99ff",
+        "tab_pad": 4, "font_delta": 0,
+    },
+    # 1. графит: почти чёрный фон, фиолетовый акцент, просторнее
+    "graphite": {
+        "name": "graphite", "dark": True,
+        "bg": "#17181a", "fg": "#e9e9ec", "sel_bg": "#3a2f6b", "sel_fg": "#ffffff",
+        "link": "#a596ff", "surface": "#1f2124", "header": "#26282c", "fieldbg": "#141517",
+        "border": "#33363b", "muted": "#9aa0a8", "accent": "#7c5cff", "tab_fg": "#a596ff",
+        "tab_pad": 7, "font_delta": 0,
+    },
+    # 2. светлая с акцентами: белые карточки на сером фоне, синий акцент, больше воздуха
+    "light-accent": {
+        "name": "light-accent", "dark": False,
+        "bg": "#f5f6f8", "fg": "#1c1e21", "sel_bg": "#dbe7ff", "sel_fg": "#0b2a6b",
+        "link": "#2563eb", "surface": "#ffffff", "header": "#e8eefc", "fieldbg": "#ffffff",
+        "border": "#d3d8e0", "muted": "#5c636e", "accent": "#2563eb", "tab_fg": "#1d4fd8",
+        "tab_pad": 8, "font_delta": 0,
+    },
+    # 3. компактная контрастная: тёмный монохром, тонкие рамки, мелкий шрифт, максимум строк
+    "compact": {
+        "name": "compact", "dark": True,
+        "bg": "#0e0f10", "fg": "#f2f2f2", "sel_bg": "#00473b", "sel_fg": "#ffffff",
+        "link": "#31d4ae", "surface": "#151718", "header": "#1b1e1f", "fieldbg": "#0b0c0d",
+        "border": "#2a2d2f", "muted": "#a8aeb2", "accent": "#00d1a0", "tab_fg": "#00d1a0",
+        "tab_pad": 2, "font_delta": -1,
+    },
+}
+
+
 class CampaignProgress:
     BAR_LENGTH = 420
     ALMOST_DONE_SECONDS = 10
@@ -1582,6 +1644,7 @@ class _SettingsVars(TypedDict):
     proxy: StringVar
     autostart: IntVar
     dark_mode: IntVar
+    theme: StringVar
     language: StringVar
     priority_mode: StringVar
     tray_notifications: IntVar
@@ -1593,6 +1656,10 @@ class _SettingsVars(TypedDict):
 class SettingsPanel:
     AUTOSTART_NAME: str = "TwitchDropsMiner"
     AUTOSTART_KEY: str = "HKCU/Software/Microsoft/Windows/CurrentVersion/Run"
+
+    @cached_property
+    def THEME_NAMES(self) -> dict[str, str]:
+        return {key: _("gui", "settings", "themes", key.replace("-", "_")) for key in THEMES}
 
     @cached_property
     def PRIORITY_MODES(self) -> dict[PriorityMode, str]:
@@ -1625,6 +1692,7 @@ class SettingsPanel:
             "proxy": StringVar(master, str(self._settings.proxy)),
             "tray": IntVar(master, self._settings.autostart_tray),
             "dark_mode": IntVar(master, int(self._settings.dark_mode)),
+            "theme": StringVar(master, self.THEME_NAMES.get(self._settings.theme or "", "")),
             "priority_mode": StringVar(master, self.PRIORITY_MODES[priority_mode]),
             "tray_notifications": IntVar(master, self._settings.tray_notifications),
             "enable_badges_emotes": IntVar(
@@ -1707,6 +1775,17 @@ class SettingsPanel:
             checkboxes_frame,
             variable=self._vars["dark_mode"],
             command=self.update_dark_mode,
+        ).grid(column=1, row=irow, sticky="w")
+        ttk.Label(
+            checkboxes_frame, text=_("gui", "settings", "general", "theme")
+        ).grid(column=0, row=(irow := irow + 1), sticky="e")
+        SelectCombobox(
+            checkboxes_frame,
+            command=self.change_theme,
+            textvariable=self._vars["theme"],
+            values=list(self.THEME_NAMES.values()),
+            width=16,
+            width_offset=0,
         ).grid(column=1, row=irow, sticky="w")
         ttk.Label(
             checkboxes_frame, text=_("gui", "settings", "general", "priority_mode")
@@ -1983,6 +2062,16 @@ class SettingsPanel:
             # the panel is being torn down
             return
         self._scan_status.after(5000, self._refresh_scan_status)
+
+    def change_theme(self, event: tk.Event[ttk.Combobox] | None = None) -> None:
+        chosen: str = self._vars["theme"].get()
+        for key, name in self.THEME_NAMES.items():
+            if name == chosen:
+                self._settings.theme = key
+                self._manager.apply_theme(key)
+                # the dark-mode checkbox follows the palette instead of driving it
+                self._vars["dark_mode"].set(int(bool(THEMES[key]["dark"])))
+                return
 
     def update_dark_mode(self) -> None:
         self._settings.dark_mode = bool(self._vars["dark_mode"].get())
@@ -2622,42 +2711,36 @@ class GUIManager:
             ctypes.sizeof(ctypes.c_int),
         )
 
-    def apply_theme(self, dark: bool) -> None:
+    def apply_theme(self, theme: str | bool) -> None:
         """
-        Apply dark/light palette to ttk styles and Tk widgets in a minimal, non-invasive way.
+        Applies one of the palettes from THEMES to the ttk styles and the Tk widgets.
+
+        A bool is accepted for the old dark-mode flag: True is "dark", False is "classic".
         """
+        if isinstance(theme, bool):
+            theme = "dark" if theme else "classic"
+        palette: ThemePalette = THEMES.get(theme) or THEMES["classic"]
+        dark: bool = bool(palette["dark"])
         # Palette
         if dark:
             # Switch to a configurable ttk theme for better color control
             if sys.platform != "darwin" and self._style.theme_use() != "clam":
                 self._style.theme_use("clam")
-            bg = "#1e1e1e"
-            fg = "#e6e6e6"
-            sel_bg = "#094771"
-            sel_fg = "#ffffff"
-            link = "#4ea3ff"
-            surface = "#252525"
-            header = "#2a2a2a"
-            fieldbg = "#2b2b2b"
-            border = "#3c3c3c"
-            muted = "#b3b3b3"
-            accent = "#0d99ff"
         else:
             # Restore original theme if we changed it
             if getattr(self, "_orig_theme_name", '') and self._style.theme_use() == "clam":
                 self._style.theme_use(self._orig_theme_name)
-            # Use platform defaults but ensure toggling back is readable
-            bg = "#f0f0f0"
-            fg = "#000000"
-            sel_bg = "#cce5ff"
-            sel_fg = "#000000"
-            link = "blue"
-            surface = "#ffffff"
-            header = "#eeeeee"
-            fieldbg = "#ffffff"
-            border = "#cccccc"
-            muted = "#404040"
-            accent = "#0a84ff"
+        bg = palette["bg"]
+        fg = palette["fg"]
+        sel_bg = palette["sel_bg"]
+        sel_fg = palette["sel_fg"]
+        link = palette["link"]
+        surface = palette["surface"]
+        header = palette["header"]
+        fieldbg = palette["fieldbg"]
+        border = palette["border"]
+        muted = palette["muted"]
+        accent = palette["accent"]
 
         # Setting theme for macOS
         if sys.platform == "darwin":
@@ -2669,8 +2752,11 @@ class GUIManager:
             app.setAppearance_(appearance)
 
         s = self._style
+        s.configure("TNotebook.Tab", padding=[palette["tab_pad"] + 4, palette["tab_pad"]])
         # Fonts
         default_font = nametofont("TkDefaultFont")
+        if palette["font_delta"]:
+            default_font.config(size=max(7, default_font.cget("size") + palette["font_delta"]))
         self._fonts["default"] = default_font
         # Font - button style with a larger font
         self._fonts["large"] = default_font.copy()
@@ -2728,7 +2814,7 @@ class GUIManager:
         s.map(
             "TNotebook.Tab",
             background=[("selected", header), ("active", header)],
-            foreground=[("disabled", muted)],
+            foreground=[("selected", palette["tab_fg"]), ("disabled", muted)],
         )
         # Entries/Combos
         s.configure(

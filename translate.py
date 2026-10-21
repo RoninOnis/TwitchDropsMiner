@@ -176,6 +176,14 @@ class GUISettingsAdvanced(TypedDict):
     available_drops_check: str
 
 
+class GUIThemes(TypedDict):
+    classic: str
+    dark: str
+    graphite: str
+    light_accent: str
+    compact: str
+
+
 class GUIPriorityModes(TypedDict):
     priority_only: str
     ending_soonest: str
@@ -186,6 +194,7 @@ class GUISettings(TypedDict):
     general: GUISettingsGeneral
     advanced: GUISettingsAdvanced
     priority_modes: GUIPriorityModes
+    themes: GUIThemes
     game_name: str
     priority: str
     exclude: str
@@ -382,6 +391,7 @@ default_translation: Translation = {
                 "tray": "Autostart into tray: ",
                 "tray_notifications": "Tray notifications: ",
                 "dark_mode": "Dark mode: ",
+                "theme": "Look: ",
                 "priority_mode": "Priority mode: ",
                 "proxy": "Proxy (requires restart):",
             },
@@ -418,6 +428,13 @@ default_translation: Translation = {
                 "priority_only": "Priority list only",
                 "ending_soonest": "Ending soonest",
                 "low_availability": "Low availability first",
+            },
+            "themes": {
+                "classic": "Classic light",
+                "dark": "Classic dark",
+                "graphite": "Graphite",
+                "light_accent": "Light with accents",
+                "compact": "Compact contrast",
             },
             "game_name": "Game name",
             "priority": "Priority",

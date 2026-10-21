@@ -29,6 +29,7 @@ class SettingsFile(TypedDict):
     proxy: URL
     language: str
     dark_mode: bool
+    theme: str
     exclude: set[str]
     priority: list[str]
     autostart_tray: bool
@@ -59,6 +60,8 @@ default_settings: SettingsFile = {
     "priority": [],
     "exclude": set(),
     "dark_mode": False,
+    # "" follows dark_mode, otherwise one of the names in gui.THEMES
+    "theme": "",
     "autostart_tray": False,
     "connection_quality": 1,
     "language": DEFAULT_LANG,
@@ -109,6 +112,7 @@ class Settings:
     proxy: URL
     language: str
     dark_mode: bool
+    theme: str
     exclude: set[str]
     priority: list[str]
     autostart_tray: bool
