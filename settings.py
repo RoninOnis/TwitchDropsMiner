@@ -52,7 +52,6 @@ class SettingsFile(TypedDict):
     seed_update_hours: int
     channel_campaigns: str
     channel_campaigns_limit: int
-    auto_add_scanned_games: bool
 
 
 default_settings: SettingsFile = {
@@ -94,7 +93,6 @@ default_settings: SettingsFile = {
     # unless the account is subscribed to the channel. Turn on to try, if subscribed.
     "channel_campaigns": "off",
     "channel_campaigns_limit": 50,
-    "auto_add_scanned_games": False,
 }
 
 
@@ -134,7 +132,6 @@ class Settings:
     seed_update_hours: int
     channel_campaigns: str
     channel_campaigns_limit: int
-    auto_add_scanned_games: bool
 
     PASSTHROUGH = ("_settings", "_args", "_altered")
 

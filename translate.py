@@ -396,7 +396,6 @@ default_translation: Translation = {
                 "name": "Drop scan",
                 "interval": "Scan for drops every: ",
                 "minutes": "min",
-                "auto_add": "Add the found games to the priority list: ",
                 "scan_now": "Scan now",
                 "never": "Not scanned yet",
                 "running": "Scanning for drops…",

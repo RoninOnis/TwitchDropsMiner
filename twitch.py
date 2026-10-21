@@ -2254,16 +2254,8 @@ class Twitch:
             f"{len(games_with_drops)} game(s) with drops, "
             f"{len(catalogue)} game(s) remembered for the next scan"
         )
-        if self.settings.auto_add_scanned_games:
-            added = [
-                name
-                for name in sorted(games_with_drops)
-                if name != CHANNEL_DROPS_GAME_NAME and name not in self.settings.priority
-            ]
-            if added:
-                self.settings.priority.extend(added)
-                self.settings.save()
-                logger.info(f"Drop scan: added {len(added)} game(s) to the priority list")
+        # NOTE: found games are never added to the priority list on their own - the list is
+        # the user's choice of what to farm, so it is only ever edited by hand
         return scan_data
 
     def _carry_over_campaigns(

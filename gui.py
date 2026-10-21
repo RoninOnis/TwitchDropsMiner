@@ -1570,7 +1570,6 @@ class _SettingsVars(TypedDict):
     enable_badges_emotes: IntVar
     available_drops_check: IntVar
     scan_interval: StringVar
-    auto_add_scanned: IntVar
 
 
 class SettingsPanel:
@@ -1623,7 +1622,6 @@ class SettingsPanel:
                     self.SCAN_INTERVALS[DEFAULT_SCAN_INTERVAL_MINUTES],
                 ),
             ),
-            "auto_add_scanned": IntVar(master, int(self._settings.auto_add_scanned_games)),
         }
         self._game_names: set[str] = set()
         master.rowconfigure(0, weight=1)
@@ -1868,18 +1866,6 @@ class SettingsPanel:
             values=list(self.SCAN_INTERVALS.values()),
             width=8,
             width_offset=0,
-        ).grid(column=1, row=srow, sticky="w")
-        ttk.Label(
-            scan_frame, text=_("gui", "settings", "scan", "auto_add")
-        ).grid(column=0, row=(srow := srow + 1), sticky="e")
-        ttk.Checkbutton(
-            scan_frame,
-            variable=self._vars["auto_add_scanned"],
-            command=lambda: setattr(
-                self._settings,
-                "auto_add_scanned_games",
-                bool(self._vars["auto_add_scanned"].get()),
-            ),
         ).grid(column=1, row=srow, sticky="w")
         ttk.Button(
             scan_frame,
