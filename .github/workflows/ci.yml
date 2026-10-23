@@ -351,49 +351,38 @@ jobs:
 
             - Reference commit: `${{github.sha}}`
 
-            **What is new in 16.2.3** - discovery runs on a published list, not on guesswork:
+            **What is new in 16.2.4** - the list of games with drops is now published, and it
+            updates by itself:
 
-            - **Two feeds are refreshed from this repository.** `games_seed.json` (the games that
-              carry drops) and `campaigns.json` (the campaigns themselves, with their dates) are
-              fetched on startup, at most once per `seed_update_hours` (24 by default). Without
-              network, or if the file has not changed, the bundled copy stays in use - silently.
-            - **A game with a running campaign is probed deep on every scan.** If the feed says a
-              campaign runs now or starts within three days, that game goes straight into the deep
-              probe set instead of waiting for the catalogue rotation - including a game the
-              catalogue has never heard of. A new campaign shows up on the first scan after it
-              appears, not after a full pass over thousands of games.
-            - **The feeds are published by the maintainer** every six hours: one scan, then
-              `tools/publish_feeds.py`, then a commit. `tools/scan_once.py` is that single scan,
-              for a headless machine under `xvfb-run`.
-            - **The coverage is visible.** Settings -> Drop scan shows a bar and a line such as
-              "Checked 920 of 5121 games (18%) - from the published list: 5068 - campaigns: 28".
-            - **The progress numbers now say what they mean.** The campaign line used to read
-              "93.0% (4/5)" - the average progress of every drop in the campaign next to the count
-              of collected drops, two different things. It reads "4/5 - average 93.0%" now, the
-              inventory cell shows minutes watched ("3.3%, 1/30 min"), and the tray title shows the
-              drop's own minutes instead of mixing them with the campaign's drop count.
-            - **A "Linked" filter in the inventory**, next to "Not linked": only campaigns whose
-              game account is connected.
-            - **The channel list tells two things apart.** "Drops" is what Twitch reports for the
-              channel - the badge the drops page shows - and "Farm" is whether this account still
-              has something to collect there. Twitch keeps a campaign listed on a channel until it
-              ends, even when everything in it has been collected, so the old single mark claimed
-              "no drops" on channels that do have them.
-            - **The "Switch" button works on such channels.** It asked the same question, so a
-              channel picked by hand was silently ignored; now a channel Twitch still lists a
-              campaign for is accepted. Every channel on the list is re-checked, not only the games
-              being farmed.
-            - **The chosen look survives a restart.** The palette was only restored from the
-              dark-mode checkbox, so every launch came back classic, and picking one never reached
-              `settings.json` at all.
-            - **The scan no longer edits your priority list.** It used to be able to append every
-              game it found to it; that option and the setting behind it are gone.
-            - **Five looks to pick from** in Settings: classic light, classic dark, graphite, light
-              with accents, and a compact contrast one. Every palette keeps its text at a contrast
-              ratio of at least 4.5:1.
+            - **The list of campaigns is no longer guessed - it is published and fetched.** Twitch
+              stopped listing campaigns anywhere, so the list now comes from this repository's own
+              `feeds` branch: `campaigns.json` there is rebuilt every hour from the public
+              `twitchdrops.app` aggregator (which scrapes Twitch every ~13 minutes itself), and
+              `games_seed.json` follows the maintainer's scan every six hours. The application reads
+              the files at startup and re-checks them every hour while it runs, so a machine left
+              open for days picks up new campaigns on its own. Only data lives on that branch, so a
+              feed update can never ship half-finished code.
+            - **The list decides what gets probed.** A campaign that is running, or starts within
+              three days, puts its game into the deep probe of every scan without waiting for the
+              catalogue rotation - even a game the catalogue has never heard of. New campaigns are
+              found on the first scan after they appear.
+            - **A button to refresh the list and to see how fresh it is.** Settings -> Drop scan now
+              has "Update the drops list": it fetches the list immediately and re-runs the scan with
+              it. Next to it the label reads "Drops list: 146 campaigns - 2026-10-23 09:07 UTC".
+            - **The scan can be switched off.** The interval list reads Off / 5 / 10 / 30 / 60
+              minutes. "Off" stops the schedule (the manual "Scan now" button still works) and keeps
+              the chosen interval for when it is turned back on; the list keeps refreshing meanwhile.
+            - **Both Advanced options are off out of the box.** The extra available-drops check used
+              to be on by default, at the cost of an extra request per channel; every option in that
+              section now starts disabled. A value already stored in `settings.json` is left alone.
+            - What the published list cannot do: it cannot say whether *your* account has the game
+              linked, and it carries no channel lists. Campaigns, channels and the account link still
+              come from the miner's own scan - the list widens what is searched, it does not replace
+              the check. A single third-party aggregator carries the fresh data, so a stale feed
+              leaves the previous list in place rather than a broken one.
 
-            New keys in `settings.json`: `seed_auto_update` (true), `seed_update_hours` (24),
-            `theme` (empty follows the dark mode checkbox).
+            Changed keys in `settings.json`: `seed_update_hours` now defaults to 1 (a stored 24 from
+            an earlier build is migrated), `available_drops_check` now defaults to false.
 
             **Builds included:** Windows, macOS, Linux AppImage (x86_64, aarch64), Linux PyInstaller
             (x86_64, aarch64), with `SHA256SUMS.txt` covering all of them.
@@ -414,47 +403,38 @@ jobs:
 
             - Коммит-основа: `${{github.sha}}`
 
-            **Что нового в 16.2.3** — поиск идёт по опубликованному списку, а не наугад:
+            **Что нового в 16.2.4** — список игр с дропами теперь публикуется и обновляется сам:
 
-            - **Два файла обновляются из этого репозитория.** `games_seed.json` (игры, у которых
-              бывают дропы) и `campaigns.json` (сами кампании с датами) загружаются при старте, не
-              чаще раза в `seed_update_hours` (по умолчанию 24 часа). Без сети или если файл не
-              изменился, остаётся зашитая копия — молча, без ошибок в интерфейсе.
-            - **Игра с идущей кампанией опрашивается глубоко на каждом скане.** Если по фиду
-              кампания идёт сейчас или начнётся в ближайшие три дня, игра попадает в глубокий опрос
-              сразу, не дожидаясь очереди ротации каталога — даже если каталог про такую игру ничего
-              не знает. Новая кампания находится на первом же скане после появления, а не после
-              полного прохода по тысячам игр.
-            - **Фиды публикует сопровождающий** каждые шесть часов: один скан, затем
-              `tools/publish_feeds.py`, затем коммит. `tools/scan_once.py` — это тот самый одиночный
-              скан, для машины без экрана запускается под `xvfb-run`.
-            - **Покрытие видно.** В настройках, в секции «Скан дропов», есть полоса и строка вида
-              «Проверено 920 из 5121 игр (18%) · из списка: 5068 · кампаний: 28».
-            - **Числа прогресса теперь означают то, что написано.** Строка кампании раньше читалась
-              как «93.0% (4/5)» — средний прогресс по всем дропам рядом с числом собранных дропов, две
-              разные величины. Теперь там «4/5 · средний 93.0%», в таблице инвентаря минуты
-              «3.3%, 1/30 мин», а в заголовке трея минуты самого дропа, а не число дропов кампании.
-            - **Фильтр «Связанные» в инвентаре**, рядом с «Не связано»: только кампании с
-              привязанным игровым аккаунтом.
-            - **В списке каналов два разных признака.** «Дропы» — то, что Twitch отдаёт по каналу
-              (тот самый бейдж со страницы дропов), «Фарм» — осталось ли что-то забрать именно вам.
-              Twitch держит кампанию на канале до её конца, даже когда всё в ней уже собрано, из-за
-              чего старая единственная галочка показывала «дропов нет» на каналах, где они есть.
-            - **Кнопка «Изменить» работает на таких каналах.** Она спрашивала то же самое, поэтому
-              выбранный руками канал молча игнорировался; теперь канал, на котором Twitch всё ещё
-              показывает кампанию, принимается. Пересчитываются все каналы списка, а не только игры
-              из списка фарма.
-            - **Выбранное оформление переживает перезапуск.** Палитра восстанавливалась только из
-              галочки тёмной темы, поэтому каждый запуск возвращался к классической, а выбор в
-              настройках вообще не попадал в `settings.json`.
-            - **Скан больше не правит ваш список приоритетов.** Раньше он мог дописывать в него
-              каждую найденную игру; эта галочка и настройка под ней убраны.
-            - **Пять вариантов оформления** в настройках: классическая светлая, классическая тёмная,
-              графит, светлая с акцентами и компактная контрастная. У каждой палитры контраст текста
-              не ниже 4.5:1.
+            - **Список кампаний больше не угадывается — он публикуется и загружается.** Twitch
+              перестал показывать кампании где-либо, поэтому список теперь берётся из ветки `feeds`
+              этого же репозитория: `campaigns.json` там пересобирается раз в час из публичного
+              агрегатора `twitchdrops.app` (он сам опрашивает Twitch примерно раз в 13 минут), а
+              `games_seed.json` раз в шесть часов обновляет скан мейнтейнера. Приложение читает файлы
+              при запуске и перепроверяет их раз в час, пока работает, так что машина, оставленная
+              включённой на сутки, новые кампании видит сама. В ветке только данные — обновление фида
+              не может притащить в релиз недоделанный код.
+            - **Список решает, что опрашивать.** Кампания, идущая сейчас или начинающаяся в ближайшие
+              три дня, отправляет свою игру в глубокий опрос на каждом скане, не дожидаясь ротации
+              каталога — даже если каталог про такую игру не знает. Новые кампании ловятся на первом
+              же скане после появления в списке.
+            - **Кнопка обновления списка и подпись о его свежести.** В настройках, в секции «Скан
+              дропов», появилась кнопка «Обновить список дропов»: она тянет список немедленно и сразу
+              перезапускает скан. Рядом подпись «Список дропов: 146 кампаний · 2026-10-23 09:07 UTC».
+            - **Скан можно выключить.** Список интервалов теперь читается как Выкл / 5 / 10 / 30 / 60
+              минут. «Выкл» останавливает расписание (ручная кнопка «Сканировать сейчас» работает) и
+              запоминает выбранный интервал — при включении он вернётся; обновление списка при этом
+              продолжается.
+            - **Обе опции «Расширенных» выключены по умолчанию.** Дополнительная проверка доступных
+              дропов была включена по умолчанию ценой лишнего запроса на канал; теперь все опции этой
+              секции стартуют выключенными. Уже сохранённое в `settings.json` значение не трогается.
+            - Чего опубликованный список не умеет: он ничего не знает про привязку *вашего* аккаунта и
+              не содержит списков каналов. Кампании, каналы и привязку по-прежнему определяет
+              собственный скан — список расширяет то, что ищется, но не заменяет проверку. Свежие
+              данные несёт один сторонний агрегатор, поэтому устаревший фид оставляет прежний список,
+              а не битый.
 
-            Новые ключи в `settings.json`: `seed_auto_update` (true), `seed_update_hours` (24),
-            `theme` (пусто — следовать галочке тёмной темы).
+            Изменённые ключи в `settings.json`: `seed_update_hours` теперь по умолчанию 1 (сохранённое
+            в прошлых сборках значение 24 мигрируется), `available_drops_check` — по умолчанию false.
 
             **В релизе:** Windows, macOS, Linux AppImage (x86_64, aarch64), Linux PyInstaller
             (x86_64, aarch64) и `SHA256SUMS.txt` с хэшами всех сборок.

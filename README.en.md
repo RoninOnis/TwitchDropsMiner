@@ -280,24 +280,46 @@ that runs a scan immediately, without waiting for the schedule. The scan is conf
   the account before mining it. It lives in the "Advanced" section, and every option there is
   off by default: each one costs extra requests and does nothing for the usual case.
 
-### The published campaigns list
+### How the list of games with drops updates now
 
-There is no way left to ask Twitch "which campaigns are running", so the list of games with
-drops comes from a published feed - `campaigns.json` on the `feeds` branch of the fork's
-repository. It is rebuilt hourly from the public `twitchdrops.app` aggregator (which scrapes
-Twitch every ~13 minutes itself), and the `feeds` branch carries data only: publishing it can
-never drag half-finished code into the branch the builds come from.
+There is no way left to ask Twitch "which campaigns are running", so the list is not guessed
+at any more: it is **published and refreshed by itself, every hour**.
 
-- The feed is not only read at startup: the scan loop re-checks it every `seed_update_hours`
-  (default **1 hour**), so an application left open for days picks up new campaigns.
-- The "Drop scan" section has an **"Update the drops list"** button: it fetches the feed
-  immediately and re-runs the scan with it. The label next to it reads
-  "Drops list: 146 campaigns · 2026-10-23 08:06 UTC", so a stale list is visible at a glance.
-- The same section holds the scan interval: **Off / 5 / 10 / 30 / 60 minutes**. Picking "Off"
-  keeps the chosen interval, so it comes back when the scan is turned on again.
-- Account links are not part of the feed and cannot be: they depend on the account, and only
-  the application's own scan (per-channel available drops) can tell.
-- Without network the bundled copy and the scan results are used, exactly as before.
+Step by step:
+
+1. **The list is assembled on the repository side.** Once an hour (`cron` at minute 7)
+   `tools/publish_site_feed.py` takes the public JSON of the `twitchdrops.app` aggregator - which
+   scrapes Twitch every ~13 minutes itself - and publishes `campaigns.json` from it onto the
+   **`feeds`** branch of this repository. Before publishing it checks the aggregator's
+   `/api/health` and its own active-campaign count, and publishes **nothing** when the data is
+   broken, stale or has collapsed; the previous publication stays in place.
+2. **`games_seed.json` on the same branch** lists the games drops have ever been seen for
+   (~4900 of them); it is rebuilt every six hours by the miner's own scan
+   (`tools/scan_once.py` -> `tools/publish_feeds.py`).
+3. **The application fetches both files from the `feeds` branch** (URLs live in `constants.py`)
+   at startup and re-checks them hourly while it runs: `seed_update_hours` defaults to 1. They
+   are cached next to the executable (`games_seed.downloaded.json`, `campaigns.downloaded.json`);
+   when the server has the same version, nothing is downloaded again and nothing is logged.
+4. **The list decides what to probe.** A campaign from `campaigns.json` that is running, or starts
+   within three days, puts its game straight into the deep probe of every scan - without waiting
+   for the catalogue rotation, and even for a game the catalogue has never heard of. A new
+   campaign is found on the first scan after it appears in the list.
+5. **The scan is still required.** The list carries no channels and no account link: the
+   campaigns, their channels and "does my account have this" come from the miner's own scan. The
+   list widens what is searched for; it does not replace the check.
+
+In the interface, in the "Drop scan" section:
+
+- the **"Update the drops list"** button fetches the list immediately and re-runs the scan with it;
+- the label next to it reads "Drops list: 146 campaigns · 2026-10-23 09:07 UTC", so a stale list
+  is visible at a glance;
+- the scan interval reads **Off / 5 / 10 / 30 / 60 minutes**. "Off" stops the schedule (the
+  manual "Scan now" button still works) and keeps the chosen interval, so it comes back when the
+  scan is turned on again. The list keeps refreshing meanwhile, so the label never lies.
+
+Without the `feeds` branch the application uses the bundled copy of the list and its own scan
+results, exactly as before - silently, with no errors in the interface. The `feeds` branch
+carries data only: publishing a feed can never drag half-finished code into the release branch.
 
 An empty priority list means "mine whatever drops are available", which is the useful
 default now that the game list is built automatically. Note that adding a game to the
