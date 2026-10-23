@@ -181,16 +181,25 @@ def build_feed(drops: dict, stamp: str) -> dict:
 
 
 def validate(feed: dict, previous: dict | None, min_active: int) -> list[str]:
+    """
+    Refuses a feed that lost campaigns, without refusing a genuinely quiet period.
+
+    The aggregator states its own active count, so the new feed has to be consistent with it:
+    that catches a scrape that only half succeeded. Comparing to the previous publication
+    alone would block a real lull, when Twitch itself has fewer campaigns running.
+    """
     problems: list[str] = []
     campaigns = feed.get("campaigns")
     if not isinstance(campaigns, list) or not campaigns:
         return ["фид пуст"]
+    declared = (feed.get("source") or {}).get("activeCampaigns")
+    declared = declared if isinstance(declared, int) and declared > 0 else None
     floor = max(min_active, 1)
-    previous_campaigns = (previous or {}).get("campaigns")
-    if isinstance(previous_campaigns, list) and previous_campaigns:
-        floor = max(floor, int(len(previous_campaigns) * MIN_ACTIVE_RATIO))
+    if declared is not None:
+        floor = max(floor, int(declared * MIN_ACTIVE_RATIO))
     if len(campaigns) < floor:
-        problems.append(f"кампаний {len(campaigns)}, а нижняя граница {floor}")
+        problems.append(f"кампаний {len(campaigns)}, а нижняя граница {floor}"
+                        f"{f' (агрегатор заявляет {declared})' if declared else ''}")
     seen_ids: set[str] = set()
     for index, entry in enumerate(campaigns):
         if not isinstance(entry, dict):
@@ -206,6 +215,9 @@ def validate(feed: dict, previous: dict | None, min_active: int) -> list[str]:
         if len(problems) > 20:
             problems.append("...")
             break
+    previous_campaigns = (previous or {}).get("campaigns")
+    if isinstance(previous_campaigns, list) and previous_campaigns:
+        log(f"для сравнения: в предыдущем фиде было {len(previous_campaigns)} кампаний")
     return problems
 
 
