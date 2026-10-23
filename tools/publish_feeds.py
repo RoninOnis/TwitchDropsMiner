@@ -79,16 +79,22 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=Path, default=DEFAULT_WORKDIR)
     parser.add_argument("--out", type=Path, default=DEFAULT_WORKDIR)
+    parser.add_argument("--history", type=Path, default=HISTORY_PATH,
+                        help="накопленная история кампаний (по умолчанию tools/campaigns_history.json)")
+    parser.add_argument("--only", choices=("both", "campaigns", "seed"), default="both",
+                        help="что публиковать: кампании строит publish_site_feed.py, "
+                             "здесь для сида нужен только 'seed'")
     parser.add_argument("--git-commit", action="store_true")
     args = parser.parse_args()
 
     stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     scan_data = load_json(args.workdir / "drops_scan.json")
 
-    history = load_json(HISTORY_PATH) or {}
+    history_path: Path = args.history
+    history = load_json(history_path) or {}
     history = history if isinstance(history, dict) else {}
     history = merge_campaigns(history, scan_data)
-    HISTORY_PATH.write_text(
+    history_path.write_text(
         json.dumps(history, ensure_ascii=False, indent=0, sort_keys=True), encoding="utf8"
     )
 
@@ -103,16 +109,17 @@ def main() -> None:
     active.sort(key=lambda entry: entry.get("endAt") or "")
 
     campaigns_path = args.out / "campaigns.json"
-    campaigns_path.write_text(
-        json.dumps(
-            {"generated": stamp, "campaigns": active + [
-                c for c in history.values() if c not in active
-            ]},
-            ensure_ascii=False,
-            indent=0,
-        ),
-        encoding="utf8",
-    )
+    if args.only != "seed":
+        campaigns_path.write_text(
+            json.dumps(
+                {"generated": stamp, "campaigns": active + [
+                    c for c in history.values() if c not in active
+                ]},
+                ensure_ascii=False,
+                indent=0,
+            ),
+            encoding="utf8",
+        )
 
     seed_path = args.out / "games_seed.json"
     games = build_games(history, load_json(seed_path))
@@ -121,11 +128,13 @@ def main() -> None:
         encoding="utf8",
     )
 
-    print(f"campaigns: {len(active)} active / {len(history)} known -> {campaigns_path}")
+    if args.only != "seed":
+        print(f"campaigns: {len(active)} active / {len(history)} known -> {campaigns_path}")
     print(f"games: {len(games)} -> {seed_path}")
 
     if args.git_commit:
-        for path in (campaigns_path, seed_path):
+        targets = [seed_path] if args.only == "seed" else [campaigns_path, seed_path]
+        for path in targets:
             subprocess.run(["git", "add", str(path)], cwd=args.out, check=True)
         result = subprocess.run(
             ["git", "commit", "-m", f"Update the drops feeds ({stamp})"], cwd=args.out

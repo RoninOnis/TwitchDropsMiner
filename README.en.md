@@ -277,6 +277,23 @@ that runs a scan immediately, without waiting for the schedule. The scan is conf
 - `available_drops_check` (default `true`) - verify that a channel actually has drops for
   the account before mining it.
 
+### The published campaigns list
+
+There is no way left to ask Twitch "which campaigns are running", so the list of games with
+drops comes from a published feed - `campaigns.json` on the `feeds` branch of the fork's
+repository. It is rebuilt hourly from the public `twitchdrops.app` aggregator (which scrapes
+Twitch every ~13 minutes itself), and the `feeds` branch carries data only: publishing it can
+never drag half-finished code into the branch the builds come from.
+
+- The feed is not only read at startup: the scan loop re-checks it every `seed_update_hours`
+  (default **1 hour**), so an application left open for days picks up new campaigns.
+- The Settings tab has an **"Update the drops list"** button next to `Reload`: it fetches the
+  feed immediately and re-runs the scan with it. The label next to it reads
+  "Drops list: 145 campaigns · 2026-10-23 08:06 UTC", so a stale list is visible at a glance.
+- Account links are not part of the feed and cannot be: they depend on the account, and only
+  the application's own scan (per-channel available drops) can tell.
+- Without network the bundled copy and the scan results are used, exactly as before.
+
 An empty priority list means "mine whatever drops are available", which is the useful
 default now that the game list is built automatically. Note that adding a game to the
 priority list restricts mining to that game only while the priority mode is

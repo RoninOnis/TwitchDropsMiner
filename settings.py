@@ -88,7 +88,7 @@ default_settings: SettingsFile = {
     "scan_bootstrap_seed_requests": SCAN_BOOTSTRAP_SEED_REQUESTS,
     # the games seed is refreshed from the repository, this is how often at most
     "seed_auto_update": True,
-    "seed_update_hours": 24,
+    "seed_update_hours": 1,
     # "off" | "relevant" (channels of the games in the priority list and of the games
     # already being mined) | "all" (every watch-based channel campaign found)
     # NOTE: off by default - every channel campaign seen so far is a subscriber reward

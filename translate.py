@@ -447,6 +447,9 @@ default_translation: Translation = {
             "exclude": "Exclude",
             "reload": "Reload",
             "reload_text": "Most changes require a reload to take an immediate effect: ",
+            "feed_reload": "Update the drops list",
+            "feed_status": "Drops list: {count} campaigns · {generated}",
+            "feed_unknown": "Drops list: not loaded yet",
         },
         "help": {
             "about": {

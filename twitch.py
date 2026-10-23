@@ -749,9 +749,9 @@ class Twitch:
             self._watching_task.cancel()
         self._watching_task = asyncio.create_task(self._watch_loop())
         if self._scan_loop_task is None or self._scan_loop_task.done():
-            self._scan_loop_task = asyncio.create_task(self._scan_loop())        # refresh the published feeds in the background, it must not delay the startup
-        asyncio.create_task(self._update_games_seed())
-        asyncio.create_task(self._update_campaigns_feed())
+            self._scan_loop_task = asyncio.create_task(self._scan_loop())
+        # refresh the published feeds in the background, it must not delay the startup
+        asyncio.create_task(self.refresh_feeds())
         # Add default topics
         self.websocket.add_topics([
             WebsocketTopic("User", "Drops", auth_state.user_id, self.process_drops),
@@ -1776,32 +1776,36 @@ class Twitch:
         except (OSError, ValueError):
             return None
 
-    async def _refresh_json_feed(self, url: str, cache_path: Path, label: str) -> None:
+    async def _refresh_json_feed(
+        self, url: str, cache_path: Path, label: str, force: bool = False
+    ) -> bool:
         """
         Fetches a feed published by the maintainer, at most once per seed_update_hours.
 
         Without network, a non-200 answer or a broken file the current feed stays in place and
-        nothing is reported in the GUI - the app has to work offline regardless.
+        nothing is reported in the GUI - the app has to work offline regardless. `force` skips
+        the interval check, for the GUI's feed button.
         """
-        if not self.settings.seed_auto_update:
-            return
-        try:
-            if cache_path.exists():
-                age: float = time() - cache_path.stat().st_mtime
-                if age < int(self.settings.seed_update_hours) * 3600:
-                    return
-        except OSError:
-            pass
+        if not self.settings.seed_auto_update and not force:
+            return False
+        if not force:
+            try:
+                if cache_path.exists():
+                    age: float = time() - cache_path.stat().st_mtime
+                    if age < int(self.settings.seed_update_hours) * 3600:
+                        return False
+            except OSError:
+                pass
         try:
             session = await self.get_session()
             async with session.get(url) as response:
                 if response.status != 200:
                     logger.log(CALL, f"Drop scan: {label} refresh answered {response.status}")
-                    return
+                    return False
                 fetched: JsonType = await response.json(content_type=None)
         except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as exc:
             logger.log(CALL, f"Drop scan: {label} refresh skipped: {exc}")
-            return
+            return False
         payload = None
         if isinstance(fetched, dict):
             for key in ("games", "campaigns"):
@@ -1809,7 +1813,7 @@ class Twitch:
                     payload = fetched[key]
                     break
         if not payload:
-            return
+            return False
         current = await self._load_json_feed(cache_path)
         if current is not None and str(fetched.get("generated") or "") <= str(
             current.get("generated") or ""
@@ -1818,7 +1822,7 @@ class Twitch:
                 cache_path.touch(exist_ok=True)
             except OSError:
                 pass
-            return
+            return False
         try:
             temporary = cache_path.with_suffix(".tmp")
             with open(temporary, "w", encoding="utf8") as feed_file:
@@ -1826,13 +1830,31 @@ class Twitch:
             temporary.replace(cache_path)
         except OSError as exc:
             logger.log(CALL, f"Drop scan: unable to store the refreshed {label}: {exc}")
-            return
+            return False
         logger.info(
             f"Drop scan: {label} refreshed from the repository, {len(payload)} entries, "
             f"{fetched.get('generated') or 'no date'}"
         )
+        return True
 
-    async def _update_games_seed(self) -> None:
+    async def refresh_feeds(self, force: bool = False) -> dict[str, bool]:
+        """
+        Refreshes both feeds published by the maintainer.
+
+        They are what the scan works from - which games to probe deep and which catalogue to
+        start from - so a machine that runs for days has to pick up new versions while it runs,
+        not only at startup. The interval itself lives in `_refresh_json_feed`.
+
+        Returns which of the two actually changed, so the caller can tell "nothing new" from
+        "downloaded".
+        """
+        seed, campaigns = await asyncio.gather(
+            self._update_games_seed(force=force),
+            self._update_campaigns_feed(force=force),
+        )
+        return {"games seed": seed, "campaigns feed": campaigns}
+
+    async def _update_games_seed(self, force: bool = False) -> bool:
         """
         Refreshes the games seed from the fork's repository, at most every N hours.
 
@@ -1841,9 +1863,11 @@ class Twitch:
         updated by the maintainer, and this only fetches it. Without network the bundled copy
         stays in use, silently - the app has to start and work regardless.
         """
-        await self._refresh_json_feed(GAMES_SEED_URL, GAMES_SEED_CACHE_PATH, "games seed")
+        return await self._refresh_json_feed(
+            GAMES_SEED_URL, GAMES_SEED_CACHE_PATH, "games seed", force=force
+        )
 
-    async def _update_campaigns_feed(self) -> None:
+    async def _update_campaigns_feed(self, force: bool = False) -> bool:
         """
         Refreshes the campaigns feed published by the maintainer.
 
@@ -1851,7 +1875,9 @@ class Twitch:
         start is probed deep on the next scan, instead of waiting for the slice rotation of a
         catalogue with thousands of games in it.
         """
-        await self._refresh_json_feed(CAMPAIGNS_URL, CAMPAIGNS_CACHE_PATH, "campaigns feed")
+        return await self._refresh_json_feed(
+            CAMPAIGNS_URL, CAMPAIGNS_CACHE_PATH, "campaigns feed", force=force
+        )
 
     def _load_campaigns_feed(self) -> JsonType | None:
         """The freshest campaigns feed: the downloaded copy, else the one bundled with the app."""
@@ -2428,6 +2454,55 @@ class Twitch:
             )
         return carried
 
+    def campaigns_feed_status(self) -> tuple[int, str]:
+        """
+        How many campaigns the stored feed carries, and when it was published.
+
+        The GUI shows this next to the feed button, so "the list is stale" is visible without
+        digging into the console.
+        """
+        feed = self._load_campaigns_feed()
+        if not isinstance(feed, dict):
+            return 0, ""
+        campaigns = feed.get("campaigns")
+        if not isinstance(campaigns, list):
+            return 0, ""
+        return len(campaigns), str(feed.get("generated") or "")
+
+    def request_feed_refresh(self) -> None:
+        """
+        Forces a campaigns/games feed refresh and re-runs the scan with what arrived.
+
+        Called from the GUI button; thread-safe, because the click arrives on the Tk thread
+        while the refresh has to happen on the event loop.
+        """
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            loop = getattr(self, "_loop", None)
+            if loop is None:
+                return
+            loop.call_soon_threadsafe(self.request_feed_refresh)
+            return
+        asyncio.create_task(self._feed_refresh_task())
+
+    async def _feed_refresh_task(self) -> None:
+        try:
+            updated = await self.refresh_feeds(force=True)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            logger.warning(f"Drop scan: the requested feed refresh failed: {exc}")
+            return
+        changed = [name for name, downloaded in updated.items() if downloaded]
+        count, generated = self.campaigns_feed_status()
+        logger.info(
+            f"Drop scan: the feeds were refreshed on request "
+            f"({', '.join(changed) if changed else 'nothing new'}), list of campaigns: "
+            f"{count}, published {generated or 'unknown'}"
+        )
+        self.start_scan()
+
     def start_scan(self) -> None:
         """
         Starts a drop scan in the background, unless one is already running.
@@ -2454,8 +2529,18 @@ class Twitch:
 
         The inventory fetch only happens now and then, so waiting for it would make a
         short interval meaningless: the schedule is checked here instead, independently.
+
+        The published feeds are refreshed from here too: they decide which games the scan
+        probes deep, and a machine that stays open for days would otherwise keep working from
+        the copy it downloaded at startup. The interval check is inside the refresh itself.
         """
         while True:
+            try:
+                await self.refresh_feeds()
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                logger.warning(f"Drop scan: the feeds refresh failed: {exc}")
             try:
                 if self.settings.scan_drops and not self.scan_running:
                     _scan_data, stale = self.load_scan_cache()

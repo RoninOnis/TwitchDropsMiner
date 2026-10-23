@@ -112,13 +112,15 @@ GAMES_CATALOGUE_PATH = Path(WORKING_DIR, "games_catalogue.json")
 # has no way to ask Twitch which games carry drops, so it starts from this list and grows it.
 GAMES_SEED_PATH = _resource_path("games_seed.json")
 # The seed is refreshed from the fork's repository, so the game list can be updated without a
-# new build: the bundled copy is only the fallback for a first start or a machine without network
-GAMES_SEED_URL = "https://raw.githubusercontent.com/RoninOnis/TwitchDropsMiner/master/games_seed.json"
+# new build: the bundled copy is only the fallback for a first start or a machine without network.
+# The feeds live on their own branch: it carries data only, so publishing them can never drag
+# half-finished code into the branch the builds come from.
+GAMES_SEED_URL = "https://raw.githubusercontent.com/RoninOnis/TwitchDropsMiner/feeds/games_seed.json"
 GAMES_SEED_CACHE_PATH = Path(WORKING_DIR, "games_seed.downloaded.json")
 # Known campaigns, published by the maintainer: a game with a campaign that is running or
 # starting soon is probed deep on every scan, so its drops show up without waiting for the
 # slice rotation to reach it
-CAMPAIGNS_URL = "https://raw.githubusercontent.com/RoninOnis/TwitchDropsMiner/master/campaigns.json"
+CAMPAIGNS_URL = "https://raw.githubusercontent.com/RoninOnis/TwitchDropsMiner/feeds/campaigns.json"
 CAMPAIGNS_CACHE_PATH = Path(WORKING_DIR, "campaigns.downloaded.json")
 # how far ahead a campaign counts as "coming up" when reading the feed, in days
 CAMPAIGNS_LOOKAHEAD_DAYS: int = 3

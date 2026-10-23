@@ -2006,6 +2006,17 @@ class SettingsPanel:
             text=_("gui", "settings", "reload"),
             command=self._manager._twitch.state_change(State.INVENTORY_FETCH),
         ).grid(column=1, row=0)
+        # the published list of campaigns, refreshed on demand
+        feed_frame = ttk.Frame(center_frame)
+        feed_frame.grid(column=0, row=4, columnspan=3, pady=4)
+        self._feed_button = ttk.Button(
+            feed_frame,
+            text=_("gui", "settings", "feed_reload"),
+            command=self._manager._twitch.request_feed_refresh,
+        )
+        self._feed_button.grid(column=0, row=0)
+        self._feed_status = ttk.Label(feed_frame, text="")
+        self._feed_status.grid(column=1, row=0, padx=(8, 0), sticky="w")
         # keep the drop scan status up to date while the app is running
         self._refresh_scan_status()
 
@@ -2071,10 +2082,24 @@ class SettingsPanel:
                 text = self._scan_status_text()
             self._scan_status.config(text=text)
             self._refresh_scan_coverage()
+            self._refresh_feed_status()
         except tk.TclError:
             # the panel is being torn down
             return
         self._scan_status.after(5000, self._refresh_scan_status)
+
+    def _refresh_feed_status(self) -> None:
+        """Shows how many campaigns the published list carries and when it was published."""
+        try:
+            count, generated = self._manager._twitch.campaigns_feed_status()
+        except Exception:
+            count, generated = 0, ""
+        if count:
+            stamp = generated.replace("T", " ")[:16] + " UTC" if generated else "?"
+            text = _("gui", "settings", "feed_status").format(count=count, generated=stamp)
+        else:
+            text = _("gui", "settings", "feed_unknown")
+        self._feed_status.config(text=text)
 
     def _select_theme(self, key: str) -> None:
         """Switches the palette, keeps both controls in sync, and writes the choice to disk."""

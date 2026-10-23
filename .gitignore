@@ -30,3 +30,5 @@ settings.json
 # Runtime scan cache (account-specific, never commit)
 /drops_scan.json
 /games_catalogue.json
+/games_seed.downloaded.json
+/campaigns.downloaded.json
