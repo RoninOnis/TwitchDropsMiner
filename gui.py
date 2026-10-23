@@ -1684,8 +1684,12 @@ class SettingsPanel:
     @cached_property
     def SCAN_INTERVALS(self) -> dict[int, str]:
         # NOTE: Same deal as with the priority modes - deferred translation calls.
+        # 0 stands for "off": picking it disables the scan and is never stored as an interval.
         unit = _("gui", "settings", "scan", "minutes")
-        return {minutes: f"{minutes} {unit}" for minutes in SCAN_INTERVAL_CHOICES}
+        return {
+            0: _("gui", "settings", "scan", "off"),
+            **{minutes: f"{minutes} {unit}" for minutes in SCAN_INTERVAL_CHOICES},
+        }
 
     def __init__(self, manager: GUIManager, master: ttk.Widget):
         self._manager = manager
@@ -1717,7 +1721,9 @@ class SettingsPanel:
             "scan_interval": StringVar(
                 master,
                 self.SCAN_INTERVALS.get(
-                    self._settings.scan_interval_minutes,
+                    0
+                    if not self._settings.scan_drops
+                    else self._settings.scan_interval_minutes,
                     self.SCAN_INTERVALS[DEFAULT_SCAN_INTERVAL_MINUTES],
                 ),
             ),
@@ -1996,6 +2002,16 @@ class SettingsPanel:
         self._scan_coverage_bar.grid(column=1, row=srow, sticky="w")
         self._scan_coverage = ttk.Label(scan_frame, text="")
         self._scan_coverage.grid(column=0, row=(srow := srow + 1), columnspan=2, sticky="w")
+        # the published list of campaigns, refreshed on demand; it belongs to the scan, since
+        # it decides which games get probed for drops
+        self._feed_button = ttk.Button(
+            scan_frame,
+            text=_("gui", "settings", "feed_reload"),
+            command=self._manager._twitch.request_feed_refresh,
+        )
+        self._feed_button.grid(column=0, row=(srow := srow + 1), sticky="e")
+        self._feed_status = ttk.Label(scan_frame, text="")
+        self._feed_status.grid(column=1, row=srow, sticky="w")
 
         # Reload button
         reload_frame = ttk.Frame(center_frame)
@@ -2006,17 +2022,6 @@ class SettingsPanel:
             text=_("gui", "settings", "reload"),
             command=self._manager._twitch.state_change(State.INVENTORY_FETCH),
         ).grid(column=1, row=0)
-        # the published list of campaigns, refreshed on demand
-        feed_frame = ttk.Frame(center_frame)
-        feed_frame.grid(column=0, row=4, columnspan=3, pady=4)
-        self._feed_button = ttk.Button(
-            feed_frame,
-            text=_("gui", "settings", "feed_reload"),
-            command=self._manager._twitch.request_feed_refresh,
-        )
-        self._feed_button.grid(column=0, row=0)
-        self._feed_status = ttk.Label(feed_frame, text="")
-        self._feed_status.grid(column=1, row=0, padx=(8, 0), sticky="w")
         # keep the drop scan status up to date while the app is running
         self._refresh_scan_status()
 
@@ -2028,8 +2033,12 @@ class SettingsPanel:
         interval_name: str = self._vars["scan_interval"].get()
         for minutes, name in self.SCAN_INTERVALS.items():
             if interval_name == name:
-                self._settings.scan_interval_minutes = minutes
-                break
+                # 0 is "off": the scan is disabled, and the last interval is kept so that
+                # turning it back on restores the previously chosen one
+                self._settings.scan_drops = minutes > 0
+                if minutes > 0:
+                    self._settings.scan_interval_minutes = minutes
+                return
 
     def scan_now(self) -> None:
         self._manager._twitch.start_scan()

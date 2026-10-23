@@ -67,7 +67,9 @@ default_settings: SettingsFile = {
     "language": DEFAULT_LANG,
     "tray_notifications": True,
     "enable_badges_emotes": False,
-    "available_drops_check": True,
+    # NOTE: off by default since 16.2.4 - the extra check costs a request per channel and the
+    # options in this section are meant to stay off unless something needs them
+    "available_drops_check": False,
     "priority_mode": PriorityMode.PRIORITY_ONLY,
     "client_type": DEFAULT_CLIENT_TYPE,
     "campaign_discovery": True,

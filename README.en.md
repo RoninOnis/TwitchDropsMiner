@@ -266,6 +266,8 @@ that runs a scan immediately, without waiting for the schedule. The scan is conf
   60);
 - `scan_top_games` (default `120`) - how many popular games to check on top of the already
   known ones; a scan over 120 games asks about ~500 channels and takes a minute or so;
+- `scan_drops` (default `true`) - whether to scan at all; this is the "Off" entry of the
+  interval list in the interface;
 - `auto_add_scanned_games` (default `false`) - put every scanned game into the priority
   list automatically instead of just listing them;
 - `channel_campaigns` (default `"off"`) - also mine the campaigns that individual
@@ -274,8 +276,9 @@ that runs a scan immediately, without waiting for the schedule. The scan is conf
   subscribed to that channel - so this does nothing for the usual case. Modes: `off`,
   `relevant` (channels of the games being farmed), `all` (plus the most watched
   drops-enabled channels overall, capped by `channel_campaigns_limit`);
-- `available_drops_check` (default `true`) - verify that a channel actually has drops for
-  the account before mining it.
+- `available_drops_check` (default `false`) - verify that a channel actually has drops for
+  the account before mining it. It lives in the "Advanced" section, and every option there is
+  off by default: each one costs extra requests and does nothing for the usual case.
 
 ### The published campaigns list
 
@@ -287,9 +290,11 @@ never drag half-finished code into the branch the builds come from.
 
 - The feed is not only read at startup: the scan loop re-checks it every `seed_update_hours`
   (default **1 hour**), so an application left open for days picks up new campaigns.
-- The Settings tab has an **"Update the drops list"** button next to `Reload`: it fetches the
-  feed immediately and re-runs the scan with it. The label next to it reads
-  "Drops list: 145 campaigns · 2026-10-23 08:06 UTC", so a stale list is visible at a glance.
+- The "Drop scan" section has an **"Update the drops list"** button: it fetches the feed
+  immediately and re-runs the scan with it. The label next to it reads
+  "Drops list: 146 campaigns · 2026-10-23 08:06 UTC", so a stale list is visible at a glance.
+- The same section holds the scan interval: **Off / 5 / 10 / 30 / 60 minutes**. Picking "Off"
+  keeps the chosen interval, so it comes back when the scan is turned on again.
 - Account links are not part of the feed and cannot be: they depend on the account, and only
   the application's own scan (per-channel available drops) can tell.
 - Without network the bundled copy and the scan results are used, exactly as before.
