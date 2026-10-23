@@ -1,0 +1,1010 @@
+{
+"generated": "2026-11-04T07:07:01Z",
+"source": {
+"name": "twitchdrops.app",
+"scrapedAt": "2026-11-04T07:01:05.573Z",
+"activeCampaigns": 112,
+"totalCampaigns": 6348
+},
+"campaigns": [
+{
+"game": "AION 2",
+"gameId": "771448419",
+"name": "Halloween Celebration",
+"startAt": "2026-10-28T17:00:00Z",
+"endAt": "2026-11-04T07:59:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Albion Online",
+"gameId": "417528",
+"name": "Dragonfire 10 - #2/7",
+"startAt": "2026-11-03T10:00:00Z",
+"endAt": "2026-11-04T09:29:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "EVE Online",
+"gameId": "13263",
+"name": "Crimson Harvest Drop 8",
+"startAt": "2026-11-02T11:00:00Z",
+"endAt": "2026-11-04T10:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Black Desert",
+"gameId": "386821",
+"name": "AOS Drops Day 11",
+"startAt": "2026-11-03T12:00:00Z",
+"endAt": "2026-11-04T11:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "ARC Raiders",
+"gameId": "464339927",
+"name": "Frozen Trail",
+"startAt": "2026-10-08T11:00:00Z",
+"endAt": "2026-11-04T12:44:59.999Z",
+"drops": 2,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Riders Republic",
+"gameId": "633127529",
+"name": "Riders Republic 5th Anniv",
+"startAt": "2026-10-20T16:00:00Z",
+"endAt": "2026-11-04T12:59:59.999Z",
+"drops": 2,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Out of the Park Baseball 27",
+"gameId": "2099590881",
+"name": "Affiliate11/3/26",
+"startAt": "2026-11-03T14:00:00Z",
+"endAt": "2026-11-04T13:59:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Hunt: Showdown 1896",
+"gameId": "500188",
+"name": "Hunt 1896 (Week 2, Pt. 1)",
+"startAt": "2026-11-02T15:00:00Z",
+"endAt": "2026-11-04T14:59:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "World of Tanks",
+"gameId": "27546",
+"name": "WoT A Thrill Store #9",
+"startAt": "2026-10-30T16:00:00Z",
+"endAt": "2026-11-04T15:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "World of Tanks: HEAT",
+"gameId": "767133634",
+"name": "HEAT Season 2 - Week 9",
+"startAt": "2026-10-28T17:00:00Z",
+"endAt": "2026-11-04T16:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Rise Online",
+"gameId": "516588",
+"name": "Mobile Drop 208",
+"startAt": "2026-11-03T17:59:00Z",
+"endAt": "2026-11-04T17:56:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Rise Online",
+"gameId": "516588",
+"name": "ROW Drop 637",
+"startAt": "2026-11-03T17:59:00Z",
+"endAt": "2026-11-04T17:56:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "World of Warships",
+"gameId": "32502",
+"name": "15.9 WOWS Channel Drop",
+"startAt": "2026-10-28T22:00:00Z",
+"endAt": "2026-11-04T22:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "The Other Side",
+"gameId": "618479630",
+"name": "Halloween 2026",
+"startAt": "2026-10-31T17:00:00Z",
+"endAt": "2026-11-04T22:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Crimson Desert",
+"gameId": "515186",
+"name": "Crimson Desert DLC Week 1",
+"startAt": "2026-10-29T22:00:00Z",
+"endAt": "2026-11-04T23:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "The Quinfall",
+"gameId": "2128139746",
+"name": "November Drops",
+"startAt": "2026-11-04T00:00:00Z",
+"endAt": "2026-11-04T23:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "FELLOWSHIP",
+"gameId": "177579460",
+"name": "Halloween",
+"startAt": "2026-10-22T00:34:37Z",
+"endAt": "2026-11-05T00:33:59.999Z",
+"drops": 4,
+"seen": "2026-10-29T04:01:18.335Z"
+},
+{
+"game": "World of Warships",
+"gameId": "32502",
+"name": "Update 15.9 Drop: Week 4",
+"startAt": "2026-10-29T17:00:00Z",
+"endAt": "2026-11-05T02:59:59.999Z",
+"drops": 2,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Coryphaeus Championships",
+"gameId": "707002701",
+"name": "November Drops",
+"startAt": "2026-11-03T08:42:26Z",
+"endAt": "2026-11-05T02:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "THE FINALS",
+"gameId": "1910103699",
+"name": "PRIME TIME",
+"startAt": "2026-10-20T13:30:00Z",
+"endAt": "2026-11-05T09:29:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Albion Online",
+"gameId": "417528",
+"name": "Dragonfire 10 - #3/7",
+"startAt": "2026-11-04T10:00:00Z",
+"endAt": "2026-11-05T09:29:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "War Thunder",
+"gameId": "66366",
+"name": "WTCS Pro Grand Finals",
+"startAt": "2026-10-30T10:00:00Z",
+"endAt": "2026-11-05T09:59:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Black Desert",
+"gameId": "386821",
+"name": "[BDC]Autumn Solare Week 1",
+"startAt": "2026-10-29T12:00:00Z",
+"endAt": "2026-11-05T11:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Black Desert",
+"gameId": "386821",
+"name": "AOS Drops Day 12",
+"startAt": "2026-11-04T12:00:00Z",
+"endAt": "2026-11-05T11:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Blue Protocol: Star Resonance",
+"gameId": "266795834",
+"name": "Season 4 Special Drops",
+"startAt": "2026-10-09T12:30:00Z",
+"endAt": "2026-11-05T12:29:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Cash is King!",
+"gameId": "1979426071",
+"name": "Steam Next Fest 2026",
+"startAt": "2026-10-08T13:00:00Z",
+"endAt": "2026-11-05T12:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Vaultbreakers",
+"gameId": "547208385",
+"name": "Vaultbreakers",
+"startAt": "2026-10-08T17:00:00Z",
+"endAt": "2026-11-05T16:59:59.999Z",
+"drops": 2,
+"seen": "2026-10-14T20:01:25.569Z"
+},
+{
+"game": "Call of Duty: Modern Warfare 4",
+"gameId": "1478650472",
+"name": "Modern Warfare 4 Launch",
+"startAt": "2026-10-23T17:00:00Z",
+"endAt": "2026-11-05T16:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Rise Online",
+"gameId": "516588",
+"name": "Mobile Drop 209",
+"startAt": "2026-11-04T17:59:00Z",
+"endAt": "2026-11-05T17:56:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Shakes and Fidget",
+"gameId": "510389",
+"name": "S&F Droplets",
+"startAt": "2026-10-30T15:00:00Z",
+"endAt": "2026-11-05T22:58:59.999Z",
+"drops": 7,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "UFL",
+"gameId": "1471416868",
+"name": "Nov #1",
+"startAt": "2026-10-29T09:10:00Z",
+"endAt": "2026-11-05T23:58:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Marvel Rivals",
+"gameId": "1264310518",
+"name": "Season 10.5 Twitch Drops",
+"startAt": "2026-10-09T12:00:00Z",
+"endAt": "2026-11-06T08:59:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Gray Zone Warfare",
+"gameId": "2106425216",
+"name": "Rogue Ops - MADFINGER",
+"startAt": "2026-10-22T16:00:00Z",
+"endAt": "2026-11-06T12:58:59.999Z",
+"drops": 2,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Gray Zone Warfare",
+"gameId": "2106425216",
+"name": "GZW Rogue Ops 0.5 Update",
+"startAt": "2026-10-22T16:00:00Z",
+"endAt": "2026-11-06T12:58:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Gray Zone Warfare",
+"gameId": "2106425216",
+"name": "Rogue Ops - Stage 5",
+"startAt": "2026-11-03T13:00:00Z",
+"endAt": "2026-11-06T12:58:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "STALZONE",
+"gameId": "516866",
+"name": "Fall 2026, Week 1",
+"startAt": "2026-10-29T14:00:00Z",
+"endAt": "2026-11-06T12:59:59.999Z",
+"drops": 6,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Mir Korabley",
+"gameId": "2133072147",
+"name": "Обновление 26.11: Часть 1",
+"startAt": "2026-10-30T15:00:00Z",
+"endAt": "2026-11-06T14:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Mir Korabley",
+"gameId": "2133072147",
+"name": "Lestakorabli - 26.11 #1",
+"startAt": "2026-10-30T15:00:00Z",
+"endAt": "2026-11-06T14:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "RavenQuest",
+"gameId": "608663369",
+"name": "November 01",
+"startAt": "2026-10-30T15:00:00Z",
+"endAt": "2026-11-06T14:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Hunt: Showdown 1896",
+"gameId": "500188",
+"name": "Hunt 1896 (Week 2, Pt. 2)",
+"startAt": "2026-11-04T15:00:00Z",
+"endAt": "2026-11-06T14:59:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "World of Tanks",
+"gameId": "27546",
+"name": "WoT A Thrill Store #10",
+"startAt": "2026-11-04T16:00:00Z",
+"endAt": "2026-11-06T15:59:59.999Z",
+"drops": 2,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "MARVEL Contest of Champions",
+"gameId": "461221",
+"name": "EMPIRE OF DOOM DROPS",
+"startAt": "2026-11-02T16:50:00Z",
+"endAt": "2026-11-06T16:44:59.999Z",
+"drops": 8,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Super Animal Royale",
+"gameId": "509529",
+"name": "SAR Monster Drops",
+"startAt": "2026-10-13T17:00:00Z",
+"endAt": "2026-11-06T16:59:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Marbles on Stream",
+"gameId": "509511",
+"name": "Marble Day 272",
+"startAt": "2026-10-30T16:00:00Z",
+"endAt": "2026-11-06T16:59:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "League of Legends",
+"gameId": "21779",
+"name": "Worlds - Sub Drop Pt. 1",
+"startAt": "2026-10-21T18:00:00Z",
+"endAt": "2026-11-06T17:58:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Plants on Fire",
+"gameId": "2146281325",
+"name": "Plants on Fire",
+"startAt": "2026-10-28T08:00:00Z",
+"endAt": "2026-11-07T07:59:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "SMITE 2",
+"gameId": "2094865572",
+"name": "Nov Wk 2 Hachiman!",
+"startAt": "2026-10-31T11:00:00Z",
+"endAt": "2026-11-07T10:57:59.999Z",
+"drops": 7,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "League of Legends",
+"gameId": "21779",
+"name": "True Damage Chat Badge",
+"startAt": "2026-10-27T16:00:00Z",
+"endAt": "2026-11-07T15:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Night Crew",
+"gameId": "977181783",
+"name": "Exclusive Demon Skins",
+"startAt": "2026-10-25T10:00:00Z",
+"endAt": "2026-11-08T09:59:59.999Z",
+"drops": 6,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Mobile Dungeon",
+"gameId": "383199964",
+"name": "MD Drops Set 1",
+"startAt": "2026-11-02T00:00:00Z",
+"endAt": "2026-11-08T21:59:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Shakes and Fidget",
+"gameId": "510389",
+"name": "S&F Drops 1/3",
+"startAt": "2026-11-02T15:00:00Z",
+"endAt": "2026-11-08T22:58:59.999Z",
+"drops": 7,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Modern Warships",
+"gameId": "423797288",
+"name": "Weekly Supply Drops #40",
+"startAt": "2026-11-02T00:00:00Z",
+"endAt": "2026-11-08T23:29:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Stream Arena RPG",
+"gameId": "1856692696",
+"name": "Mr. Chicken's Chicken!",
+"startAt": "2026-10-29T18:38:39Z",
+"endAt": "2026-11-08T23:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Krunker",
+"gameId": "508391",
+"name": "November Spins Update",
+"startAt": "2026-11-01T00:00:00Z",
+"endAt": "2026-11-08T23:59:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "NARAKA: BLADEPOINT",
+"gameId": "515474",
+"name": "JS2 Weekly 11.2",
+"startAt": "2026-11-02T04:00:00Z",
+"endAt": "2026-11-09T03:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Dead by Daylight",
+"gameId": "491487",
+"name": "Dbd Halloween Badge",
+"startAt": "2026-10-31T07:00:00Z",
+"endAt": "2026-11-09T07:58:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Medivia Online",
+"gameId": "490488",
+"name": "Halloween Event",
+"startAt": "2026-11-02T09:00:00Z",
+"endAt": "2026-11-09T08:59:59.999Z",
+"drops": 9,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Infestation: The New Z",
+"gameId": "491289",
+"name": "Halloween 2026 Part 3",
+"startAt": "2026-10-30T11:01:00Z",
+"endAt": "2026-11-09T10:59:59.999Z",
+"drops": 10,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Out of the Park Baseball 27",
+"gameId": "2099590881",
+"name": "Laptophound 26",
+"startAt": "2026-11-02T13:00:00Z",
+"endAt": "2026-11-09T12:59:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Hunt: Showdown 1896",
+"gameId": "500188",
+"name": "HS 1896 Halloween 2026",
+"startAt": "2026-10-26T14:54:34Z",
+"endAt": "2026-11-09T13:59:59.999Z",
+"drops": 2,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Out of the Park Baseball 27",
+"gameId": "2099590881",
+"name": "Official 26",
+"startAt": "2026-11-02T14:00:00Z",
+"endAt": "2026-11-09T13:59:59.999Z",
+"drops": 7,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "HITMAN World of Assassination",
+"gameId": "1780647523",
+"name": "The Host Drop #1",
+"startAt": "2026-10-29T14:01:00Z",
+"endAt": "2026-11-09T14:00:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Stella Sora",
+"gameId": "411135266",
+"name": "Stella Sora 1st Anniv",
+"startAt": "2026-10-20T09:00:00Z",
+"endAt": "2026-11-09T14:59:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "MARVEL Strike Force",
+"gameId": "504651",
+"name": "MSF | Nov Week 1",
+"startAt": "2026-11-02T21:00:00Z",
+"endAt": "2026-11-09T20:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Kirka.io",
+"gameId": "356609813",
+"name": "Aldrin",
+"startAt": "2026-11-02T05:27:31Z",
+"endAt": "2026-11-09T23:29:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Delta Force",
+"gameId": "1282866981",
+"name": "SEASON AURORA PREVIEW SUB",
+"startAt": "2026-10-30T14:50:00Z",
+"endAt": "2026-11-09T23:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Crystal of Atlan",
+"gameId": "741249831",
+"name": "Lv.80 & New collab",
+"startAt": "2026-10-28T10:00:00Z",
+"endAt": "2026-11-10T09:59:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Planet Zoo 2",
+"gameId": "1510789205",
+"name": "Launch Clothing Set",
+"startAt": "2026-10-13T12:00:00Z",
+"endAt": "2026-11-10T11:58:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "VAIL",
+"gameId": "1405679224",
+"name": "VAIL Drops 04 // Ubelime",
+"startAt": "2026-11-03T13:00:00Z",
+"endAt": "2026-11-10T12:59:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Vampir",
+"gameId": "532911623",
+"name": "VAMPIR Drops Event",
+"startAt": "2026-10-28T02:00:00Z",
+"endAt": "2026-11-10T14:59:59.999Z",
+"drops": 6,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Ravendawn",
+"gameId": "262400435",
+"name": "November 01",
+"startAt": "2026-11-03T15:00:00Z",
+"endAt": "2026-11-10T14:59:59.999Z",
+"drops": 6,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Tom Clancy's The Division 2",
+"gameId": "504463",
+"name": "Echoes of Central Park",
+"startAt": "2026-11-03T16:00:00Z",
+"endAt": "2026-11-10T15:59:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Zenless Zone Zero",
+"gameId": "456845141",
+"name": "V3.3 Zenless Zone Zero",
+"startAt": "2026-10-21T02:00:00Z",
+"endAt": "2026-11-11T15:59:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "World of Tanks: HEAT",
+"gameId": "767133634",
+"name": "HEAT Season 2 - Week 10",
+"startAt": "2026-11-04T17:00:00Z",
+"endAt": "2026-11-11T16:59:59.999Z",
+"drops": 2,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "ARKNIGHTS: ENDFIELD",
+"gameId": "1448964995",
+"name": "Sanctuary of Ink",
+"startAt": "2026-10-15T02:00:00Z",
+"endAt": "2026-11-12T01:59:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Where Winds Meet",
+"gameId": "1630982727",
+"name": "Where Winds Meet November",
+"startAt": "2026-10-15T05:30:00Z",
+"endAt": "2026-11-12T05:29:59.999Z",
+"drops": 6,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "DRAGON BALL GEKISHIN SQUADRA",
+"gameId": "801541637",
+"name": "SQUADRA SEASON 7.2 Drops",
+"startAt": "2026-10-15T06:00:00Z",
+"endAt": "2026-11-12T05:59:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "For Honor",
+"gameId": "490382",
+"name": "FH EntireDirectory Oct26",
+"startAt": "2026-10-22T16:00:00Z",
+"endAt": "2026-11-12T16:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Captain's Call",
+"gameId": "856072301",
+"name": "Alpha 4",
+"startAt": "2026-10-17T02:00:00Z",
+"endAt": "2026-11-13T01:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Lords Mobile",
+"gameId": "492618",
+"name": "Twitch Drops",
+"startAt": "2026-10-16T02:10:09Z",
+"endAt": "2026-11-13T02:09:59.999Z",
+"drops": 2,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Viking Rise",
+"gameId": "987025231",
+"name": "Twitch Drops",
+"startAt": "2026-10-16T03:00:01Z",
+"endAt": "2026-11-13T02:59:59.999Z",
+"drops": 2,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "FELLOWSHIP",
+"gameId": "177579460",
+"name": "Collect Everything!",
+"startAt": "2026-10-29T04:22:54Z",
+"endAt": "2026-11-13T04:21:59.999Z",
+"drops": 8,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "NBA 2K27",
+"gameId": "602040818",
+"name": "NBA 2K27 Season 2",
+"startAt": "2026-10-16T15:00:00Z",
+"endAt": "2026-11-13T14:59:59.999Z",
+"drops": 2,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Call of Duty: Modern Warfare 4",
+"gameId": "1478650472",
+"name": "Modern Warfare 4 Badge",
+"startAt": "2026-10-23T17:00:00Z",
+"endAt": "2026-11-13T17:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Neighbors: Suburban Warfare",
+"gameId": "914381364",
+"name": "NeighbOooOos Halloween",
+"startAt": "2026-10-23T12:00:00Z",
+"endAt": "2026-11-13T23:59:59.999Z",
+"drops": 2,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Marvel Rivals",
+"gameId": "1264310518",
+"name": "Ignite Stage2 W5",
+"startAt": "2026-10-18T15:00:00Z",
+"endAt": "2026-11-15T08:59:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Once Human",
+"gameId": "1441208453",
+"name": "Ocean Expansion Drops",
+"startAt": "2026-10-22T02:00:00Z",
+"endAt": "2026-11-15T11:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Kakele Online - MMORPG",
+"gameId": "902050890",
+"name": "Kakele Online-November",
+"startAt": "2026-11-01T06:00:00Z",
+"endAt": "2026-11-15T11:59:59.999Z",
+"drops": 9,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "League of Legends",
+"gameId": "21779",
+"name": "Worlds 2026 Chat Badge",
+"startAt": "2026-10-14T19:00:00Z",
+"endAt": "2026-11-15T18:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Anno 117: Pax Romana",
+"gameId": "1637021799",
+"name": "Anno 117 - DLC3 Drops",
+"startAt": "2026-11-03T10:00:00Z",
+"endAt": "2026-11-17T09:59:59.999Z",
+"drops": 2,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Enshrouded",
+"gameId": "737987407",
+"name": "Enshrouded Artificer",
+"startAt": "2026-11-03T14:00:00Z",
+"endAt": "2026-11-17T13:59:59.999Z",
+"drops": 6,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Palia",
+"gameId": "982017546",
+"name": "Hearty Homecoming",
+"startAt": "2026-10-27T18:00:00Z",
+"endAt": "2026-11-17T17:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "AION 2",
+"gameId": "771448419",
+"name": "Ludra Awakens",
+"startAt": "2026-11-04T14:00:00Z",
+"endAt": "2026-11-18T07:59:59.999Z",
+"drops": 10,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "QSMP",
+"gameId": "1422023940",
+"name": "Quackity's QSMP2 Season 2",
+"startAt": "2026-10-21T13:00:00Z",
+"endAt": "2026-11-18T12:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "GODDESS OF VICTORY: NIKKE",
+"gameId": "512033",
+"name": "NIKKE 4th Anniv. Drops",
+"startAt": "2026-10-28T15:00:00Z",
+"endAt": "2026-11-18T14:59:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "UNO! Mobile",
+"gameId": "869745621",
+"name": "UNO! Mobile Twitch Drops",
+"startAt": "2026-10-22T00:00:00Z",
+"endAt": "2026-11-18T23:59:59.999Z",
+"drops": 6,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Cyberpunk 2077",
+"gameId": "65876",
+"name": "Cyberpunk 2077 Chat Badge",
+"startAt": "2026-10-22T10:00:00Z",
+"endAt": "2026-11-19T09:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Honkai Impact 3rd",
+"gameId": "506230",
+"name": "V9.1 Special Drops",
+"startAt": "2026-10-22T10:00:00Z",
+"endAt": "2026-11-19T09:59:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Cyberpunk 2077",
+"gameId": "65876",
+"name": "Quadra Paintjobs",
+"startAt": "2026-10-22T10:00:00Z",
+"endAt": "2026-11-19T09:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Don't Starve Together",
+"gameId": "488634",
+"name": "Butterfly Wardrobe",
+"startAt": "2026-10-22T17:00:00Z",
+"endAt": "2026-11-19T16:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Overwatch",
+"gameId": "515025",
+"name": "OWCS Stage 3 Playoffs",
+"startAt": "2026-10-30T07:00:00Z",
+"endAt": "2026-11-23T07:59:59.999Z",
+"drops": 10,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Genshin Impact",
+"gameId": "513181",
+"name": "V7.2 Genshin Impact Drops",
+"startAt": "2026-11-04T03:00:00Z",
+"endAt": "2026-11-24T03:59:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Shroud of the Avatar: Forsaken Virtues",
+"gameId": "130976",
+"name": "Spectator's Collection",
+"startAt": "2026-10-30T15:51:34Z",
+"endAt": "2026-11-25T12:49:59.999Z",
+"drops": 4,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Shroud of the Avatar: Forsaken Virtues",
+"gameId": "130976",
+"name": "Spectator's Collection",
+"startAt": "2026-10-29T12:51:00Z",
+"endAt": "2026-11-25T12:50:59.999Z",
+"drops": 4,
+"seen": "2026-10-30T15:31:05.305Z"
+},
+{
+"game": "Goblin Cleanup",
+"gameId": "628949545",
+"name": "Grime Scene",
+"startAt": "2026-10-30T14:00:00Z",
+"endAt": "2026-11-25T23:29:59.999Z",
+"drops": 6,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Monster Hunter Outlanders",
+"gameId": "558633344",
+"name": "MHO Twitch Drops",
+"startAt": "2026-10-29T06:00:00Z",
+"endAt": "2026-11-26T05:59:59.999Z",
+"drops": 3,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "ELDEN RING",
+"gameId": "512953",
+"name": "Warrior Jar Alexander",
+"startAt": "2026-11-02T07:00:00Z",
+"endAt": "2026-11-30T06:59:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Predecessor",
+"gameId": "511295",
+"name": "❄️ Frostbite Drops",
+"startAt": "2026-11-03T16:00:00Z",
+"endAt": "2026-11-30T23:29:59.999Z",
+"drops": 5,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "World of Warcraft",
+"gameId": "18122",
+"name": "Horde and Alliance Badges",
+"startAt": "2026-11-04T16:00:00Z",
+"endAt": "2026-12-01T07:58:59.999Z",
+"drops": 1,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Overwatch",
+"gameId": "515025",
+"name": "Reign of Talon S5 Mid",
+"startAt": "2026-11-03T19:00:00Z",
+"endAt": "2026-12-01T07:58:59.999Z",
+"drops": 6,
+"seen": "2026-11-04T07:01:05.573Z"
+},
+{
+"game": "Coin Pusher Live",
+"gameId": "1426040084",
+"name": "Captain's Collaboration",
+"startAt": "2026-11-03T13:28:00Z",
+"endAt": "2026-12-01T13:27:59.999Z",
+"drops": 2,
+"seen": "2026-11-04T07:01:05.573Z"
+}
+]
+}
