@@ -102,6 +102,8 @@ AppDir:
       - libxml2
       - mime-support
       - readline-common
+      # pulled in through the tray indicator's dependency chain; an AppImage needs no init
+      - systemd
       - tzdata
       - xkb-data
 
@@ -120,6 +122,28 @@ AppDir:
       # The next 2 files come from our own build of libXft, and they can be removed.
       - usr/lib/libXft.la
       - usr/lib/pkgconfig
+      # systemd binaries and helpers: whatever the package exclude misses, plus the udev rules
+      # and PAM modules that only matter on a booted system. ~5 MB of the image.
+      - bin/busctl
+      - bin/journalctl
+      - bin/loginctl
+      - bin/networkctl
+      - bin/systemctl
+      - usr/bin/busctl
+      - usr/bin/journalctl
+      - usr/bin/loginctl
+      - usr/bin/networkctl
+      - usr/bin/systemctl
+      - bin/systemd-*
+      - usr/bin/systemd-*
+      - lib/lsb
+      - usr/lib/lsb
+      - lib/modprobe.d
+      - usr/lib/modprobe.d
+      - lib/systemd
+      - usr/lib/systemd
+      - lib/udev
+      - usr/lib/udev
       - usr/lib/python3
       - usr/lib/python3.11
       - usr/lib/python3*/pydoc_data
