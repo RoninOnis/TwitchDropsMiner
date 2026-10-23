@@ -198,3 +198,9 @@ class Settings:
         if self._settings["scan_interval_minutes"] not in SCAN_INTERVAL_CHOICES:
             self._settings["scan_interval_minutes"] = DEFAULT_SCAN_INTERVAL_MINUTES
             self._altered = True
+        # The campaigns list is published hourly since 16.2.4, and 24 hours was the old
+        # default for how often to fetch it: keeping it would leave an upgraded install a day
+        # behind. Not exposed in the GUI, so a stored 24 is the old default, not a choice.
+        if int(self._settings.get("seed_update_hours") or 0) == 24:
+            self._settings["seed_update_hours"] = 1
+            self._altered = True
