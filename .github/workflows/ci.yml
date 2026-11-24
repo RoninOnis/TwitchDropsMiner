@@ -111,6 +111,10 @@ jobs:
   macos:
     name: macOS
     runs-on: macos-latest
+    # GitHub перестал выдавать hosted-раннеры macOS: джоба висит в очереди ~15 минут, раннер не
+    # назначается (runner_name пуст, steps=0) и её отменяют. Сборка выключена; включается
+    # переменной репозитория ENABLE_MACOS=true, без правки workflow.
+    if: vars.ENABLE_MACOS == 'true'
     needs:
       - validate
 
@@ -316,7 +320,6 @@ jobs:
       - windows
       - linux-pyinstaller
       - linux-appimage
-      - macos
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -344,105 +347,32 @@ jobs:
           prerelease: false
           tag: ${{github.ref_name}}
           body: |
-            **Unofficial fix build** - a fork of
-            [DevilXD/TwitchDropsMiner](https://github.com/DevilXD/TwitchDropsMiner), carrying the
-            fixes needed after Twitch's 2026 API changes. All credit for the application itself goes
-            to DevilXD and the upstream contributors.
+            **Unofficial fix build** - a fork of [DevilXD/TwitchDropsMiner](https://github.com/DevilXD/TwitchDropsMiner), carrying fixes and packaging for the 2026 Twitch API changes. All credit for the application itself goes to DevilXD and the upstream contributors.
 
             - Reference commit: `${{github.sha}}`
 
-            **What is new in 16.2.4** - the list of games with drops is now published, and it
-            updates by itself:
+            **What is new in 16.2.5** - the feeds are fetched from the renamed account:
 
-            - **The list of campaigns is no longer guessed - it is published and fetched.** Twitch
-              stopped listing campaigns anywhere, so the list now comes from this repository's own
-              `feeds` branch: `campaigns.json` there is rebuilt every hour from the public
-              `twitchdrops.app` aggregator (which scrapes Twitch every ~13 minutes itself), and
-              `games_seed.json` follows the maintainer's scan every six hours. The application reads
-              the files at startup and re-checks them every hour while it runs, so a machine left
-              open for days picks up new campaigns on its own. Only data lives on that branch, so a
-              feed update can never ship half-finished code.
-            - **The list decides what gets probed.** A campaign that is running, or starts within
-              three days, puts its game into the deep probe of every scan without waiting for the
-              catalogue rotation - even a game the catalogue has never heard of. New campaigns are
-              found on the first scan after they appear.
-            - **A button to refresh the list and to see how fresh it is.** Settings -> Drop scan now
-              has "Update the drops list": it fetches the list immediately and re-runs the scan with
-              it. Next to it the label reads "Drops list: 146 campaigns - 2026-10-23 09:07 UTC".
-            - **The scan can be switched off.** The interval list reads Off / 5 / 10 / 30 / 60
-              minutes. "Off" stops the schedule (the manual "Scan now" button still works) and keeps
-              the chosen interval for when it is turned back on; the list keeps refreshing meanwhile.
-            - **Both Advanced options are off out of the box.** The extra available-drops check used
-              to be on by default, at the cost of an extra request per channel; every option in that
-              section now starts disabled. A value already stored in `settings.json` is left alone.
-            - What the published list cannot do: it cannot say whether *your* account has the game
-              linked, and it carries no channel lists. Campaigns, channels and the account link still
-              come from the miner's own scan - the list widens what is searched, it does not replace
-              the check. A single third-party aggregator carries the fresh data, so a stale feed
-              leaves the previous list in place rather than a broken one.
+            - **Feed source fixed.** The games seed and the campaigns feed were fetched from the previous account name, which keeps answering only through a repository redirect; the account was renamed, and the old login is now free for anyone to claim. Both feeds point at the new location, so campaign discovery cannot be fed from a stranger's repository.
 
-            Changed keys in `settings.json`: `seed_update_hours` now defaults to 1 (a stored 24 from
-            an earlier build is migrated), `available_drops_check` now defaults to false.
+            **Builds included:** Windows, Linux AppImage (x86_64, aarch64), Linux PyInstaller (x86_64, aarch64), with `SHA256SUMS.txt` covering all of them. This release has **no macOS build**: GitHub-hosted macOS runners are not being assigned right now (the job waits in the queue and is cancelled after 15 minutes) - the build returns as soon as they are available.
 
-            **Builds included:** Windows, macOS, Linux AppImage (x86_64, aarch64), Linux PyInstaller
-            (x86_64, aarch64), with `SHA256SUMS.txt` covering all of them.
+            The builds keep their original file names on purpose: unpack one over an existing installation to update it while keeping `settings.json`, the login and the scan cache. Close the running application first - the executable is locked while it runs, and only a single instance can run at a time.
 
-            The builds keep their original file names on purpose: unpack one over an existing
-            installation to update it while keeping `settings.json`, the login and the scan cache.
-            Close the running application first - the executable is locked while it runs, and only a
-            single instance can run at a time.
-
-            Not tested on hardware: the macOS build (and it is unsigned, so Gatekeeper will
-            complain) and both aarch64 builds - those come straight off the CI runners.
+            Not tested on hardware: both aarch64 builds - those come straight off the CI runners.
 
             ---
 
-            **Неофициальная fix-сборка** [DevilXD/TwitchDropsMiner](https://github.com/DevilXD/TwitchDropsMiner)
-            с исправлениями под изменения API Twitch 2026 года. Все права на само приложение
-            принадлежат DevilXD и контрибьюторам апстрима.
+            **Неофициальная fix-сборка** [DevilXD/TwitchDropsMiner](https://github.com/DevilXD/TwitchDropsMiner) с исправлениями и упаковкой под изменения API Twitch 2026 года. Все права на само приложение принадлежат DevilXD и контрибьюторам апстрима.
 
             - Коммит-основа: `${{github.sha}}`
 
-            **Что нового в 16.2.4** — список игр с дропами теперь публикуется и обновляется сам:
+            **Что нового в 16.2.5** — фиды тянутся с переименованного аккаунта:
 
-            - **Список кампаний больше не угадывается — он публикуется и загружается.** Twitch
-              перестал показывать кампании где-либо, поэтому список теперь берётся из ветки `feeds`
-              этого же репозитория: `campaigns.json` там пересобирается раз в час из публичного
-              агрегатора `twitchdrops.app` (он сам опрашивает Twitch примерно раз в 13 минут), а
-              `games_seed.json` раз в шесть часов обновляет скан мейнтейнера. Приложение читает файлы
-              при запуске и перепроверяет их раз в час, пока работает, так что машина, оставленная
-              включённой на сутки, новые кампании видит сама. В ветке только данные — обновление фида
-              не может притащить в релиз недоделанный код.
-            - **Список решает, что опрашивать.** Кампания, идущая сейчас или начинающаяся в ближайшие
-              три дня, отправляет свою игру в глубокий опрос на каждом скане, не дожидаясь ротации
-              каталога — даже если каталог про такую игру не знает. Новые кампании ловятся на первом
-              же скане после появления в списке.
-            - **Кнопка обновления списка и подпись о его свежести.** В настройках, в секции «Скан
-              дропов», появилась кнопка «Обновить список дропов»: она тянет список немедленно и сразу
-              перезапускает скан. Рядом подпись «Список дропов: 146 кампаний · 2026-10-23 09:07 UTC».
-            - **Скан можно выключить.** Список интервалов теперь читается как Выкл / 5 / 10 / 30 / 60
-              минут. «Выкл» останавливает расписание (ручная кнопка «Сканировать сейчас» работает) и
-              запоминает выбранный интервал — при включении он вернётся; обновление списка при этом
-              продолжается.
-            - **Обе опции «Расширенных» выключены по умолчанию.** Дополнительная проверка доступных
-              дропов была включена по умолчанию ценой лишнего запроса на канал; теперь все опции этой
-              секции стартуют выключенными. Уже сохранённое в `settings.json` значение не трогается.
-            - Чего опубликованный список не умеет: он ничего не знает про привязку *вашего* аккаунта и
-              не содержит списков каналов. Кампании, каналы и привязку по-прежнему определяет
-              собственный скан — список расширяет то, что ищется, но не заменяет проверку. Свежие
-              данные несёт один сторонний агрегатор, поэтому устаревший фид оставляет прежний список,
-              а не битый.
+            - **Источник фидов исправлен.** Список игр и список кампаний скачивались по прежнему имени аккаунта: оно отвечает только за счёт редиректа репозитория, а сам логин после переименования свободен и его может занять кто угодно. Оба адреса теперь указывают на новое имя, так что подсунуть приложению чужой `campaigns.json` через освободившийся логин больше нельзя.
 
-            Изменённые ключи в `settings.json`: `seed_update_hours` теперь по умолчанию 1 (сохранённое
-            в прошлых сборках значение 24 мигрируется), `available_drops_check` — по умолчанию false.
+            **В релизе:** Windows, Linux AppImage (x86_64, aarch64), Linux PyInstaller (x86_64, aarch64) и `SHA256SUMS.txt` с хэшами всех сборок. Сборки для macOS в этом релизе нет: GitHub сейчас не выдаёт hosted-раннеры macOS (джоба висит в очереди и отменяется через 15 минут) — она вернётся, как только их снова начнут выделять.
 
-            **В релизе:** Windows, macOS, Linux AppImage (x86_64, aarch64), Linux PyInstaller
-            (x86_64, aarch64) и `SHA256SUMS.txt` с хэшами всех сборок.
+            Имена файлов специально такие же, как у апстрима: сборку можно распаковать поверх уже установленной, сохранив `settings.json`, логин и кэш скана. Перед заменой закройте приложение — запущенный исполняемый файл заблокирован, и одновременно может работать только один экземпляр.
 
-            Имена файлов специально такие же, как у апстрима: сборку можно распаковать поверх уже
-            установленной, сохранив `settings.json`, логин и кэш скана. Перед заменой закройте
-            приложение — запущенный исполняемый файл заблокирован, и одновременно может работать
-            только один экземпляр.
-
-            На железе не проверялись: сборка для macOS (и она без подписи, так что Gatekeeper будет
-            ругаться) и обе aarch64-сборки — они взяты прямо с раннеров CI.
+            На железе не проверялись: обе aarch64-сборки — они взяты прямо с раннеров CI.
