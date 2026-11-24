@@ -2397,7 +2397,7 @@ class HelpTab:
             about, text=_("gui", "help", "about", "modified_by"), anchor="e"
         ).grid(column=0, row=1, sticky="nsew", padx=(0, 4))
         LinkLabel(
-            about, link="https://github.com/RoninOnis", text="0xONI"
+            about, link="https://github.com/0xONI-R", text="0xONI"
         ).grid(column=1, row=1, sticky="w")
         # Useful links
         links = ttk.LabelFrame(

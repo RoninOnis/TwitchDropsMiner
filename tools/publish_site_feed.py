@@ -40,7 +40,7 @@ from pathlib import Path
 SITE = "https://twitchdrops.app"
 HEALTH_URL = f"{SITE}/api/health"
 DROPS_URL = f"{SITE}/api/drops"
-USER_AGENT = "TwitchDropsMiner-feed-publisher (+https://github.com/RoninOnis/TwitchDropsMiner)"
+USER_AGENT = "TwitchDropsMiner-feed-publisher (+https://github.com/0xONI-R/TwitchDropsMiner)"
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_FEED_DIR = HERE.parent.parent / "feeds"

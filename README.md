@@ -46,7 +46,7 @@ macOS, Linux AppImage (x86_64/aarch64) и Linux PyInstaller (x86_64/aarch64), и
 
 ### Использование:
 
-- Скачайте и распакуйте [последний релиз](https://github.com/RoninOnis/TwitchDropsMiner/releases) - рекомендуется держать его в той папке, в которой он поставляется.
+- Скачайте и распакуйте [последний релиз](https://github.com/0xONI-R/TwitchDropsMiner/releases) - рекомендуется держать его в той папке, в которой он поставляется.
 - Запустите и подключите майнер к своему аккаунту Twitch через форму логина в приложении.
 - После успешного логина приложение получит список доступных кампаний и игр, за которые можно
   фармить дропы - выберите нужные игры и добавьте их в список приоритетов на вкладке Settings,
@@ -119,7 +119,7 @@ macOS, Linux AppImage (x86_64/aarch64) и Linux PyInstaller (x86_64/aarch64), и
   `glibc>=2.35` и рабочий сервер дисплея. Если AppImage не запускается, нужен пакет `libfuse2`,
   либо запуск через `--appimage-extract-and-run`.
 - Все функции приложения должны работать на Linux так же хорошо, как на Windows. Если что-то
-  сломано - [откройте issue](https://github.com/RoninOnis/TwitchDropsMiner/issues/new).
+  сломано - [откройте issue](https://github.com/0xONI-R/TwitchDropsMiner/issues/new).
 - Размер Linux-версии заметно больше, чем Windows-версии, из-за библиотеки `gtk3` (и её
   зависимостей), нужной для корректной поддержки системного трея и уведомлений.
 - Как альтернативу нативному Linux-приложению можно запускать Windows-версию через [Wine](https://www.winehq.org/). Работает отлично!
@@ -151,7 +151,7 @@ macOS, Linux AppImage (x86_64/aarch64) и Linux PyInstaller (x86_64/aarch64), и
 Если возникнут проблемы с майнером:
 
 - Загляните на [страницу troubleshooting](https://github.com/DevilXD/TwitchDropsMiner/wiki/Troubleshooting) - там разобраны частые ситуации и их причины.  
-- [Поищите по issues](https://github.com/RoninOnis/TwitchDropsMiner/issues?q=sort%3Aupdated-desc%20is%3Aissue) - возможно, о вашей проблеме уже писали.  
+- [Поищите по issues](https://github.com/0xONI-R/TwitchDropsMiner/issues?q=sort%3Aupdated-desc%20is%3Aissue) - возможно, о вашей проблеме уже писали.  
 - Если ещё не писали - откройте новый issue с описанием проблемы.
 
 ### Цели проекта:
